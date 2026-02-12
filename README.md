@@ -152,3 +152,8 @@ STL uploads and GCODE output are temporary -- they are written to `/tmp/slicing/
 - Runtime deps: xvfb, libgl1, libgtk-3-0, python3, Flask
 - Exposed port: 5000
 - Volume: `/data` for persistent profiles
+
+## Inspiration
+
+- Kevin (creator of Klipper) who mentioned opportunity to make slicing easier in the future.
+- https://github.com/OrcaSlicer/OrcaSlicer/discussions/1603
