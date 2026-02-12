@@ -1,7 +1,7 @@
 # OrcaSlicer API & Web App
 
 > [!WARNING]
-> This software is still in its very early stages.
+> This software is still in its very early stages. I have not printed GCODE downloaded from it yet.
 
 Containerized web application that exposes OrcaSlicer's CLI slicing capability via a web UI and HTTP API. Upload slicer profiles (printer, process, filament JSONs), then slice STL/3MF files to download GCODE.
 
