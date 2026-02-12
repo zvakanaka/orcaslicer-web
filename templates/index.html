@@ -8,187 +8,195 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #1a1a2e;
-  --card: #16213e;
-  --border: #0f3460;
-  --accent: #e94560;
-  --success: #4ecca3;
-  --text: #eee;
-  --muted: #8899aa;
-  --input-bg: #0d1b2a;
-  --radius: 8px;
+  --bg: #0e0e12;
+  --surface: #16161d;
+  --border: #2a2a35;
+  --border-focus: #4a4a5a;
+  --text: #d4d4dc;
+  --muted: #6e6e7a;
+  --accent: #5b9bf5;
+  --accent-hover: #7db3ff;
+  --accent-dim: rgba(91, 155, 245, 0.1);
+  --danger: #e05555;
+  --success: #4ec990;
+  --radius: 6px;
 }
 
 html, body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+  font-family: "SF Mono", "Cascadia Code", "JetBrains Mono", "Fira Code", "Inconsolata", "Source Code Pro", "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.6;
   min-height: 100vh;
   overscroll-behavior: none;
 }
 
 .container {
-  max-width: 720px;
+  max-width: 600px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 24px 16px;
 }
 
 header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  align-items: baseline;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
 header h1 {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--accent);
 }
 
 .help-btn {
   min-width: 44px;
   min-height: 44px;
-  background: var(--border);
-  border: none;
-  color: var(--text);
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
   border-radius: var(--radius);
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 14px;
-  gap: 6px;
+  padding: 0 12px;
 }
-.help-btn:hover { background: #1a4a7a; }
+.help-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 20px;
+section {
+  margin-bottom: 32px;
 }
 
-.card h2 {
-  font-size: 1.1rem;
-  margin-bottom: 14px;
+section h2 {
+  font-size: 0.8rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 12px;
 }
 
 /* Tabs */
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 0;
   margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
 .tab {
-  flex: 1;
   min-height: 44px;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
   color: var(--muted);
-  border-radius: var(--radius);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   cursor: pointer;
+  padding: 0 16px;
   transition: all 0.15s;
+  margin-bottom: -1px;
 }
 .tab.active {
-  background: var(--border);
-  color: var(--text);
-  font-weight: 600;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 500;
 }
 .tab:hover:not(.active) { color: var(--text); }
 
 /* Drop zone */
 .drop-zone {
-  border: 2px dashed var(--border);
+  border: 1.5px dashed var(--border);
   border-radius: var(--radius);
-  padding: 24px 16px;
+  padding: 20px 16px;
   text-align: center;
   color: var(--muted);
   cursor: pointer;
   transition: all 0.15s;
-  min-height: 80px;
+  min-height: 72px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
 }
 .drop-zone:hover, .drop-zone.dragover {
   border-color: var(--accent);
   color: var(--text);
-  background: rgba(233, 69, 96, 0.05);
+  background: var(--accent-dim);
 }
 .drop-zone input[type="file"] { display: none; }
-.drop-zone .label { font-size: 0.95rem; }
-.drop-zone .hint { font-size: 0.8rem; color: var(--muted); }
+.drop-zone .label { font-size: 0.9rem; }
+.drop-zone .hint { font-size: 0.78rem; color: var(--muted); }
 
 /* Name input row */
 .name-row {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 .name-row input {
   flex: 1;
   min-height: 44px;
-  background: var(--input-bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
   border-radius: var(--radius);
   padding: 0 12px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  font-family: inherit;
 }
 .name-row input::placeholder { color: var(--muted); }
 .name-row input:focus { outline: none; border-color: var(--accent); }
 
-.upload-btn {
-  min-width: 44px;
+.upload-btn, .slice-btn {
   min-height: 44px;
   background: var(--accent);
   border: none;
-  color: #fff;
+  color: var(--bg);
   border-radius: var(--radius);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  padding: 0 18px;
+  padding: 0 20px;
+  transition: background 0.15s;
 }
-.upload-btn:hover { filter: brightness(1.1); }
-.upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.upload-btn:hover, .slice-btn:hover { background: var(--accent-hover); }
+.upload-btn:disabled, .slice-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* Profile list */
 .profile-list {
-  margin-top: 14px;
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .profile-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
-  background: var(--input-bg);
+  padding: 8px 10px;
   border-radius: var(--radius);
   border: 1px solid transparent;
   cursor: pointer;
   min-height: 44px;
-  transition: border-color 0.15s;
+  transition: all 0.1s;
 }
-.profile-item:hover { border-color: var(--border); }
-.profile-item.selected { border-color: var(--success); }
+.profile-item:hover { background: var(--surface); }
+.profile-item.selected { background: var(--accent-dim); border-color: var(--accent); }
 
 .profile-item input[type="radio"] {
-  accent-color: var(--success);
-  width: 18px;
-  height: 18px;
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
 }
 
@@ -197,7 +205,7 @@ header h1 {
   min-width: 0;
 }
 .profile-item .name {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -208,35 +216,35 @@ header h1 {
 }
 
 .delete-btn {
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 32px;
+  min-height: 32px;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   color: var(--muted);
   border-radius: var(--radius);
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.delete-btn:hover { color: var(--accent); border-color: var(--accent); }
+.delete-btn:hover { color: var(--danger); }
 
 .empty-msg {
   text-align: center;
   color: var(--muted);
-  font-size: 0.9rem;
-  padding: 16px;
+  font-size: 0.85rem;
+  padding: 20px 16px;
 }
 
-/* Slice card */
+/* Slice section */
 .selection-summary {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 16px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 .selection-summary .row {
   display: flex;
@@ -244,44 +252,36 @@ header h1 {
 }
 .selection-summary .label {
   color: var(--muted);
-  min-width: 70px;
+  min-width: 64px;
 }
 .selection-summary .value { color: var(--text); }
-.selection-summary .none { color: var(--accent); font-style: italic; }
+.selection-summary .none { color: var(--muted); font-style: italic; }
 
 .slice-btn {
   width: 100%;
   min-height: 48px;
-  background: var(--success);
-  border: none;
-  color: #1a1a2e;
-  border-radius: var(--radius);
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 14px;
-  transition: filter 0.15s;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
-.slice-btn:hover { filter: brightness(1.1); }
-.slice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .status-bar {
-  margin-top: 12px;
-  padding: 10px 14px;
+  margin-top: 10px;
+  padding: 10px 12px;
   border-radius: var(--radius);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   display: none;
 }
-.status-bar.info { display: block; background: rgba(78, 204, 163, 0.1); color: var(--success); }
-.status-bar.error { display: block; background: rgba(233, 69, 96, 0.1); color: var(--accent); }
-.status-bar.busy { display: block; background: rgba(136, 153, 170, 0.1); color: var(--muted); }
+.status-bar.info { display: block; background: rgba(78, 201, 144, 0.1); color: var(--success); }
+.status-bar.error { display: block; background: rgba(224, 85, 85, 0.1); color: var(--danger); }
+.status-bar.busy { display: block; background: var(--accent-dim); color: var(--muted); }
 
 /* Modal */
 .modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 100;
   align-items: center;
   justify-content: center;
@@ -290,18 +290,20 @@ header h1 {
 .modal-overlay.open { display: flex; }
 
 .modal {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  max-width: 640px;
+  max-width: 600px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
   padding: 24px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
 
 .modal h2 {
-  font-size: 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
   margin-bottom: 16px;
 }
 
@@ -312,44 +314,45 @@ header h1 {
   background: transparent;
   border: none;
   color: var(--muted);
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   cursor: pointer;
 }
 .modal-close:hover { color: var(--text); }
 
 .help-item {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 .help-item .title {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: var(--muted);
   margin-bottom: 4px;
 }
 .help-item pre {
-  background: var(--input-bg);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: 10px 12px;
   overflow-x: auto;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   line-height: 1.6;
-  color: var(--success);
+  font-family: inherit;
+  color: var(--accent);
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-/* Notification */
+/* Toast */
 .toast {
   position: fixed;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 10px 20px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 8px 20px;
   border-radius: var(--radius);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   z-index: 200;
   opacity: 0;
   transition: opacity 0.3s;
@@ -357,10 +360,9 @@ header h1 {
 }
 .toast.show { opacity: 1; }
 
-/* File selected indicator */
 .file-selected {
   color: var(--success);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin-top: 6px;
   word-break: break-all;
 }
@@ -370,11 +372,10 @@ header h1 {
 <div class="container">
   <header>
     <h1>OrcaSlicer API</h1>
-    <button class="help-btn" onclick="openHelp()">? Help</button>
+    <button class="help-btn" onclick="openHelp()">API Help</button>
   </header>
 
-  <!-- Profiles Card -->
-  <div class="card">
+  <section>
     <h2>Profiles</h2>
     <div class="tabs">
       <button class="tab active" data-cat="printer" onclick="switchTab('printer')">Printer</button>
@@ -390,43 +391,42 @@ header h1 {
     <div class="file-selected" id="profileFileSelected"></div>
 
     <div class="name-row">
-      <input type="text" id="profileNameInput" placeholder="Profile name (optional, derived from filename)">
+      <input type="text" id="profileNameInput" placeholder="Profile name (optional)">
       <button class="upload-btn" id="profileUploadBtn" disabled onclick="uploadProfile()">Upload</button>
     </div>
 
     <div class="profile-list" id="profileList"></div>
-  </div>
+  </section>
 
-  <!-- Slice Card -->
-  <div class="card">
+  <section>
     <h2>Slice</h2>
 
     <div class="selection-summary" id="selectionSummary">
       <div class="row">
-        <span class="label">Printer:</span>
+        <span class="label">Printer</span>
         <span class="value none" id="selPrinter">none selected</span>
       </div>
       <div class="row">
-        <span class="label">Process:</span>
+        <span class="label">Process</span>
         <span class="value none" id="selProcess">none selected</span>
       </div>
       <div class="row">
-        <span class="label">Filament:</span>
+        <span class="label">Filament</span>
         <span class="value none" id="selFilament">none selected</span>
       </div>
     </div>
 
     <div class="drop-zone" id="modelDropZone">
       <input type="file" id="modelFileInput" accept=".stl,.3mf">
-      <div class="label">Drop STL / 3MF file here or tap to browse</div>
-      <div class="hint">Max 100MB</div>
+      <div class="label">Drop STL or 3MF file here or tap to browse</div>
+      <div class="hint">Max 100 MB</div>
     </div>
     <div class="file-selected" id="modelFileSelected"></div>
 
     <button class="slice-btn" id="sliceBtn" disabled onclick="sliceModel()">Slice &amp; Download</button>
 
     <div class="status-bar" id="statusBar"></div>
-  </div>
+  </section>
 </div>
 
 <!-- Help Modal -->
@@ -531,7 +531,6 @@ header h1 {
     profileFileHandle = file;
     document.getElementById("profileFileSelected").textContent = file.name;
     document.getElementById("profileUploadBtn").disabled = false;
-    // Pre-fill name from filename without extension
     const nameInput = document.getElementById("profileNameInput");
     if (!nameInput.value) {
       nameInput.value = file.name.replace(/\.json$/i, "");
@@ -579,7 +578,6 @@ header h1 {
       });
       listEl.innerHTML = html;
 
-      // Auto-select first if none selected
       if (!selectedProfiles[cat] && data.profiles.length > 0) {
         selectProfile(cat, data.profiles[0].name);
       }
@@ -596,7 +594,6 @@ header h1 {
 
   window.selectProfile = function(cat, name) {
     selectedProfiles[cat] = name;
-    // Update radio buttons and selected class in current list
     if (cat === activeCategory) {
       document.querySelectorAll("#profileList .profile-item").forEach(function(el) {
         const isSelected = el.dataset.name === name;
@@ -771,12 +768,10 @@ header h1 {
     document.getElementById("helpModal").classList.remove("open");
   };
 
-  // Close modal on overlay click
   document.getElementById("helpModal").addEventListener("click", function(e) {
     if (e.target === this) closeHelp();
   });
 
-  // Close modal on Escape
   document.addEventListener("keydown", function(e) {
     if (e.key === "Escape") closeHelp();
   });
