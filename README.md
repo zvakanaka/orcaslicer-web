@@ -9,9 +9,9 @@ Containerized web application that exposes OrcaSlicer's CLI slicing capability v
 
 > Web UI
 
-<img width="947" height="510" alt="image" src="https://github.com/user-attachments/assets/ce0161dd-a0ed-44d7-9c98-93210cc465ec" />
+<img width="947" height="513" alt="image" src="https://github.com/user-attachments/assets/dc1428be-5328-4784-9d22-e72c2212ccd9" />
 
-> Viewing GCODE downloaded from this in OrcaSlicer - as you can see, the problem of reorienting the model still needs solving
+> Viewing GCODE downloaded from this in OrcaSlicer (with auto orient enabled otherwise it'd be upside-down like the STL)
 
 ## Quick Start
 
