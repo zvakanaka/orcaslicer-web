@@ -1,0 +1,8 @@
+data/
+*.pyc
+__pycache__
+.git
+.gitignore
+.claude
+README.md
+LICENSE

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>OrcaSlicer API</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1a2e;
+  --card: #16213e;
+  --border: #0f3460;
+  --accent: #e94560;
+  --success: #4ecca3;
+  --text: #eee;
+  --muted: #8899aa;
+  --input-bg: #0d1b2a;
+  --radius: 8px;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overscroll-behavior: none;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.help-btn {
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--border);
+  border: none;
+  color: var(--text);
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  gap: 6px;
+}
+.help-btn:hover { background: #1a4a7a; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.card h2 {
+  font-size: 1.1rem;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  flex: 1;
+  min-height: 44px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tab.active {
+  background: var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Drop zone */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(233, 69, 96, 0.05);
+}
+.drop-zone input[type="file"] { display: none; }
+.drop-zone .label { font-size: 0.95rem; }
+.drop-zone .hint { font-size: 0.8rem; color: var(--muted); }
+
+/* Name input row */
+.name-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.name-row input {
+  flex: 1;
+  min-height: 44px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  font-size: 0.95rem;
+}
+.name-row input::placeholder { color: var(--muted); }
+.name-row input:focus { outline: none; border-color: var(--accent); }
+
+.upload-btn {
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 18px;
+}
+.upload-btn:hover { filter: brightness(1.1); }
+.upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Profile list */
+.profile-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--input-bg);
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  min-height: 44px;
+  transition: border-color 0.15s;
+}
+.profile-item:hover { border-color: var(--border); }
+.profile-item.selected { border-color: var(--success); }
+
+.profile-item input[type="radio"] {
+  accent-color: var(--success);
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.profile-item .info {
+  flex: 1;
+  min-width: 0;
+}
+.profile-item .name {
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.profile-item .meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.delete-btn {
+  min-width: 36px;
+  min-height: 36px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.delete-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.empty-msg {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 16px;
+}
+
+/* Slice card */
+.selection-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+.selection-summary .row {
+  display: flex;
+  gap: 8px;
+}
+.selection-summary .label {
+  color: var(--muted);
+  min-width: 70px;
+}
+.selection-summary .value { color: var(--text); }
+.selection-summary .none { color: var(--accent); font-style: italic; }
+
+.slice-btn {
+  width: 100%;
+  min-height: 48px;
+  background: var(--success);
+  border: none;
+  color: #1a1a2e;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 14px;
+  transition: filter 0.15s;
+}
+.slice-btn:hover { filter: brightness(1.1); }
+.slice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.status-bar {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  display: none;
+}
+.status-bar.info { display: block; background: rgba(78, 204, 163, 0.1); color: var(--success); }
+.status-bar.error { display: block; background: rgba(233, 69, 96, 0.1); color: var(--accent); }
+.status-bar.busy { display: block; background: rgba(136, 153, 170, 0.1); color: var(--muted); }
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 640px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.modal h2 {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+}
+
+.modal-close {
+  float: right;
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+.modal-close:hover { color: var(--text); }
+
+.help-item {
+  margin-bottom: 14px;
+}
+.help-item .title {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.help-item pre {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--success);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Notification */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* File selected indicator */
+.file-selected {
+  color: var(--success);
+  font-size: 0.9rem;
+  margin-top: 6px;
+  word-break: break-all;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>OrcaSlicer API</h1>
+    <button class="help-btn" onclick="openHelp()">? Help</button>
+  </header>
+
+  <!-- Profiles Card -->
+  <div class="card">
+    <h2>Profiles</h2>
+    <div class="tabs">
+      <button class="tab active" data-cat="printer" onclick="switchTab('printer')">Printer</button>
+      <button class="tab" data-cat="process" onclick="switchTab('process')">Process</button>
+      <button class="tab" data-cat="filament" onclick="switchTab('filament')">Filament</button>
+    </div>
+
+    <div class="drop-zone" id="profileDropZone">
+      <input type="file" id="profileFileInput" accept=".json">
+      <div class="label">Drop JSON profile here or tap to browse</div>
+      <div class="hint" id="profileDropHint">Uploading to: printer</div>
+    </div>
+    <div class="file-selected" id="profileFileSelected"></div>
+
+    <div class="name-row">
+      <input type="text" id="profileNameInput" placeholder="Profile name (optional, derived from filename)">
+      <button class="upload-btn" id="profileUploadBtn" disabled onclick="uploadProfile()">Upload</button>
+    </div>
+
+    <div class="profile-list" id="profileList"></div>
+  </div>
+
+  <!-- Slice Card -->
+  <div class="card">
+    <h2>Slice</h2>
+
+    <div class="selection-summary" id="selectionSummary">
+      <div class="row">
+        <span class="label">Printer:</span>
+        <span class="value none" id="selPrinter">none selected</span>
+      </div>
+      <div class="row">
+        <span class="label">Process:</span>
+        <span class="value none" id="selProcess">none selected</span>
+      </div>
+      <div class="row">
+        <span class="label">Filament:</span>
+        <span class="value none" id="selFilament">none selected</span>
+      </div>
+    </div>
+
+    <div class="drop-zone" id="modelDropZone">
+      <input type="file" id="modelFileInput" accept=".stl,.3mf">
+      <div class="label">Drop STL / 3MF file here or tap to browse</div>
+      <div class="hint">Max 100MB</div>
+    </div>
+    <div class="file-selected" id="modelFileSelected"></div>
+
+    <button class="slice-btn" id="sliceBtn" disabled onclick="sliceModel()">Slice &amp; Download</button>
+
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeHelp()">&times;</button>
+    <h2>API Help</h2>
+    <div id="helpContent">Loading...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  "use strict";
+
+  // --- State ---
+  let activeCategory = "printer";
+  let selectedProfiles = { printer: null, process: null, filament: null };
+  let profileFileHandle = null;
+  let modelFileHandle = null;
+
+  // --- Utils ---
+
+  function toast(msg, duration) {
+    duration = duration || 3000;
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(function() { el.classList.remove("show"); }, duration);
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function formatDate(ts) {
+    return new Date(ts * 1000).toLocaleString();
+  }
+
+  async function api(method, path, opts) {
+    opts = opts || {};
+    const fetchOpts = { method: method };
+    if (opts.body) fetchOpts.body = opts.body;
+    if (opts.headers) fetchOpts.headers = opts.headers;
+
+    const resp = await fetch(path, fetchOpts);
+    return resp;
+  }
+
+  // --- Tabs ---
+
+  window.switchTab = function(cat) {
+    activeCategory = cat;
+    document.querySelectorAll(".tab").forEach(function(t) {
+      t.classList.toggle("active", t.dataset.cat === cat);
+    });
+    document.getElementById("profileDropHint").textContent = "Uploading to: " + cat;
+    profileFileHandle = null;
+    document.getElementById("profileFileSelected").textContent = "";
+    document.getElementById("profileFileInput").value = "";
+    document.getElementById("profileNameInput").value = "";
+    document.getElementById("profileUploadBtn").disabled = true;
+    loadProfiles(cat);
+  };
+
+  // --- Profile drop zone ---
+
+  function setupDropZone(zoneId, inputId, onFile) {
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+
+    zone.addEventListener("click", function() { input.click(); });
+
+    input.addEventListener("change", function() {
+      if (input.files.length > 0) onFile(input.files[0]);
+    });
+
+    zone.addEventListener("dragover", function(e) {
+      e.preventDefault();
+      zone.classList.add("dragover");
+    });
+
+    zone.addEventListener("dragleave", function() {
+      zone.classList.remove("dragover");
+    });
+
+    zone.addEventListener("drop", function(e) {
+      e.preventDefault();
+      zone.classList.remove("dragover");
+      if (e.dataTransfer.files.length > 0) {
+        onFile(e.dataTransfer.files[0]);
+        input.files = e.dataTransfer.files;
+      }
+    });
+  }
+
+  setupDropZone("profileDropZone", "profileFileInput", function(file) {
+    profileFileHandle = file;
+    document.getElementById("profileFileSelected").textContent = file.name;
+    document.getElementById("profileUploadBtn").disabled = false;
+    // Pre-fill name from filename without extension
+    const nameInput = document.getElementById("profileNameInput");
+    if (!nameInput.value) {
+      nameInput.value = file.name.replace(/\.json$/i, "");
+    }
+  });
+
+  setupDropZone("modelDropZone", "modelFileInput", function(file) {
+    modelFileHandle = file;
+    document.getElementById("modelFileSelected").textContent = file.name;
+    updateSliceBtn();
+  });
+
+  // --- Profile CRUD ---
+
+  async function loadProfiles(cat) {
+    cat = cat || activeCategory;
+    const listEl = document.getElementById("profileList");
+
+    try {
+      const resp = await api("GET", "/api/profiles/" + cat);
+      const data = await resp.json();
+
+      if (!data.profiles || data.profiles.length === 0) {
+        listEl.innerHTML = '<div class="empty-msg">No ' + cat + ' profiles uploaded yet</div>';
+        if (selectedProfiles[cat]) {
+          selectedProfiles[cat] = null;
+          updateSelectionSummary();
+          updateSliceBtn();
+        }
+        return;
+      }
+
+      let html = "";
+      data.profiles.forEach(function(p) {
+        const checked = selectedProfiles[cat] === p.name ? "checked" : "";
+        const selectedClass = selectedProfiles[cat] === p.name ? " selected" : "";
+        html += '<div class="profile-item' + selectedClass + '" data-name="' + p.name + '" onclick="selectProfile(\'' + cat + '\', \'' + p.name + '\')">';
+        html += '<input type="radio" name="profile-' + cat + '" ' + checked + ' tabindex="-1">';
+        html += '<div class="info">';
+        html += '<div class="name">' + escapeHtml(p.name) + '</div>';
+        html += '<div class="meta">' + formatSize(p.size) + ' &middot; ' + formatDate(p.modified) + '</div>';
+        html += '</div>';
+        html += '<button class="delete-btn" onclick="event.stopPropagation(); deleteProfile(\'' + cat + '\', \'' + escapeHtml(p.name) + '\')" title="Delete">&times;</button>';
+        html += '</div>';
+      });
+      listEl.innerHTML = html;
+
+      // Auto-select first if none selected
+      if (!selectedProfiles[cat] && data.profiles.length > 0) {
+        selectProfile(cat, data.profiles[0].name);
+      }
+    } catch (e) {
+      listEl.innerHTML = '<div class="empty-msg">Error loading profiles</div>';
+    }
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  window.selectProfile = function(cat, name) {
+    selectedProfiles[cat] = name;
+    // Update radio buttons and selected class in current list
+    if (cat === activeCategory) {
+      document.querySelectorAll("#profileList .profile-item").forEach(function(el) {
+        const isSelected = el.dataset.name === name;
+        el.classList.toggle("selected", isSelected);
+        el.querySelector("input[type=radio]").checked = isSelected;
+      });
+    }
+    updateSelectionSummary();
+    updateSliceBtn();
+  };
+
+  function updateSelectionSummary() {
+    ["printer", "process", "filament"].forEach(function(cat) {
+      var el = document.getElementById("sel" + cat.charAt(0).toUpperCase() + cat.slice(1));
+      if (selectedProfiles[cat]) {
+        el.textContent = selectedProfiles[cat];
+        el.className = "value";
+      } else {
+        el.textContent = "none selected";
+        el.className = "value none";
+      }
+    });
+  }
+
+  function updateSliceBtn() {
+    var ready = selectedProfiles.printer && selectedProfiles.process && selectedProfiles.filament && modelFileHandle;
+    document.getElementById("sliceBtn").disabled = !ready;
+  }
+
+  window.uploadProfile = async function() {
+    if (!profileFileHandle) return;
+
+    var btn = document.getElementById("profileUploadBtn");
+    btn.disabled = true;
+    btn.textContent = "...";
+
+    var name = document.getElementById("profileNameInput").value.trim();
+    var form = new FormData();
+    form.append("file", profileFileHandle);
+    if (name) form.append("name", name);
+
+    try {
+      var resp = await api("POST", "/api/profiles/" + activeCategory, { body: form });
+      var data = await resp.json();
+
+      if (resp.ok) {
+        toast("Uploaded: " + data.name);
+        profileFileHandle = null;
+        document.getElementById("profileFileSelected").textContent = "";
+        document.getElementById("profileFileInput").value = "";
+        document.getElementById("profileNameInput").value = "";
+        loadProfiles(activeCategory);
+      } else {
+        toast(data.error || "Upload failed");
+      }
+    } catch (e) {
+      toast("Upload error: " + e.message);
+    }
+
+    btn.disabled = !profileFileHandle;
+    btn.textContent = "Upload";
+  };
+
+  window.deleteProfile = async function(cat, name) {
+    if (!confirm("Delete profile '" + name + "'?")) return;
+
+    try {
+      var resp = await api("DELETE", "/api/profiles/" + cat + "/" + name);
+      if (resp.ok) {
+        toast("Deleted: " + name);
+        if (selectedProfiles[cat] === name) {
+          selectedProfiles[cat] = null;
+          updateSelectionSummary();
+          updateSliceBtn();
+        }
+        loadProfiles(cat);
+      } else {
+        var data = await resp.json();
+        toast(data.error || "Delete failed");
+      }
+    } catch (e) {
+      toast("Delete error: " + e.message);
+    }
+  };
+
+  // --- Slicing ---
+
+  window.sliceModel = async function() {
+    if (!modelFileHandle) return;
+    if (!selectedProfiles.printer || !selectedProfiles.process || !selectedProfiles.filament) return;
+
+    var btn = document.getElementById("sliceBtn");
+    var status = document.getElementById("statusBar");
+
+    btn.disabled = true;
+    btn.textContent = "Slicing...";
+    status.className = "status-bar busy";
+    status.style.display = "block";
+    status.textContent = "Slicing in progress. This may take a minute...";
+
+    var form = new FormData();
+    form.append("model", modelFileHandle);
+    form.append("printer", selectedProfiles.printer);
+    form.append("process", selectedProfiles.process);
+    form.append("filament", selectedProfiles.filament);
+
+    try {
+      var resp = await fetch("/api/slice", { method: "POST", body: form });
+
+      if (resp.ok) {
+        var blob = await resp.blob();
+        var disposition = resp.headers.get("Content-Disposition") || "";
+        var match = disposition.match(/filename="?([^"]+)"?/);
+        var filename = match ? match[1] : "output.gcode";
+        var elapsed = resp.headers.get("X-Slice-Time-Seconds") || "?";
+
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        status.className = "status-bar info";
+        status.textContent = "Slicing complete in " + elapsed + "s. Downloading " + filename;
+      } else {
+        var data = await resp.json();
+        status.className = "status-bar error";
+
+        var msg = data.error || "Slicing failed";
+        if (data.stderr) msg += "\n\nstderr: " + data.stderr.substring(0, 500);
+        if (data.stdout) msg += "\n\nstdout: " + data.stdout.substring(0, 500);
+        status.textContent = msg;
+      }
+    } catch (e) {
+      status.className = "status-bar error";
+      status.textContent = "Error: " + e.message;
+    }
+
+    btn.disabled = false;
+    btn.textContent = "Slice & Download";
+    updateSliceBtn();
+  };
+
+  // --- Help modal ---
+
+  window.openHelp = async function() {
+    document.getElementById("helpModal").classList.add("open");
+    var content = document.getElementById("helpContent");
+    content.textContent = "Loading...";
+
+    try {
+      var resp = await api("GET", "/api/help");
+      var data = await resp.json();
+
+      var html = "";
+      data.examples.forEach(function(ex) {
+        html += '<div class="help-item">';
+        html += '<div class="title">' + escapeHtml(ex.title) + '</div>';
+        html += '<pre>' + escapeHtml(ex.command) + '</pre>';
+        html += '</div>';
+      });
+      content.innerHTML = html;
+    } catch (e) {
+      content.textContent = "Failed to load help.";
+    }
+  };
+
+  window.closeHelp = function() {
+    document.getElementById("helpModal").classList.remove("open");
+  };
+
+  // Close modal on overlay click
+  document.getElementById("helpModal").addEventListener("click", function(e) {
+    if (e.target === this) closeHelp();
+  });
+
+  // Close modal on Escape
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") closeHelp();
+  });
+
+  // --- Init ---
+
+  loadProfiles("printer");
+  loadProfiles("process");
+  loadProfiles("filament");
+
+})();
+</script>
+</body>
+</html>

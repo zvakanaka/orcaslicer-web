@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+data/
+*.gcode
+*.stl
+*.3mf
+
+# Editor cache/swap files
+*~
+*.swp
+*.swo
+*.swn
+\#*\#
+.#*
+*.bak
+*.orig
+*.kate-swp
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# OS cache files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.Trash-*
+.directory
