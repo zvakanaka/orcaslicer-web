@@ -1,4 +1,4 @@
-# OrcaSlicer API
+# OrcaSlicer API & Web App
 
 > [!WARNING]
 > This software is in very early stages of development.
