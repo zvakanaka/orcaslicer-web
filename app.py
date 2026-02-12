@@ -436,15 +436,20 @@ def slice_model():
         model_file.save(str(model_path))
 
         # Build command
+        orient = request.form.get("orient", "").strip().lower() in ("1", "true", "on", "yes")
+
         cmd = [
             ORCASLICER_BIN,
             "--slice", "0",
             "--load-settings", f"{printer_path};{process_path}",
             "--load-filaments", str(filament_path),
             "--allow-newer-file",
-            "--outputdir", str(output_dir),
-            str(model_path),
+            "--arrange", "1",
+            "--ensure-on-bed",
         ]
+        if orient:
+            cmd.extend(["--orient", "1"])
+        cmd.extend(["--outputdir", str(output_dir), str(model_path)])
 
         result = subprocess.run(
             cmd,

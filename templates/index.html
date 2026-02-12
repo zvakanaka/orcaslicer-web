@@ -257,6 +257,24 @@ section h2 {
 .selection-summary .value { color: var(--text); }
 .selection-summary .none { color: var(--muted); font-style: italic; }
 
+.option-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  min-height: 36px;
+}
+.option-check input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.option-check:hover { color: var(--text); }
+
 .slice-btn {
   width: 100%;
   min-height: 48px;
@@ -422,6 +440,11 @@ section h2 {
       <div class="hint">Max 100 MB</div>
     </div>
     <div class="file-selected" id="modelFileSelected"></div>
+
+    <label class="option-check">
+      <input type="checkbox" id="orientCheck">
+      <span>Auto-orient model for printing</span>
+    </label>
 
     <button class="slice-btn" id="sliceBtn" disabled onclick="sliceModel()">Slice &amp; Download</button>
 
@@ -699,6 +722,9 @@ section h2 {
     form.append("printer", selectedProfiles.printer);
     form.append("process", selectedProfiles.process);
     form.append("filament", selectedProfiles.filament);
+    if (document.getElementById("orientCheck").checked) {
+      form.append("orient", "1");
+    }
 
     try {
       var resp = await fetch("/api/slice", { method: "POST", body: form });
