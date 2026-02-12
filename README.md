@@ -11,7 +11,7 @@ Containerized web application that exposes OrcaSlicer's CLI slicing capability v
 
 <img width="947" height="513" alt="image" src="https://github.com/user-attachments/assets/dc1428be-5328-4784-9d22-e72c2212ccd9" />
 
-> Viewing GCODE downloaded from this in OrcaSlicer (with auto orient enabled otherwise it'd be upside-down like the STL)
+> Viewing GCODE downloaded from this in OrcaSlicer (with auto-orient enabled, otherwise it'd print rightside-up like the STL)
 
 ## Quick Start
 
