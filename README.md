@@ -11,7 +11,7 @@ Containerized web application that exposes OrcaSlicer's CLI slicing capability v
 
 <img width="947" height="510" alt="image" src="https://github.com/user-attachments/assets/ce0161dd-a0ed-44d7-9c98-93210cc465ec" />
 
-> Viewing GCODE downloaded from this in OrcaSlicer - as you can see, the problem of rotation still needs solving
+> Viewing GCODE downloaded from this in OrcaSlicer - as you can see, the problem of reorienting the model still needs solving
 
 ## Quick Start
 
@@ -161,5 +161,5 @@ STL uploads and GCODE output are temporary -- they are written to `/tmp/slicing/
 
 ## Inspiration
 
-- Kevin (creator of Klipper) who mentioned opportunity to make slicing easier in the future.
+- Kevin O'Connor (creator of Klipper) [mentioned slicing could be easier](https://youtube.com/watch?v=tODfTn9Yr8s&t=1620s)
 - https://github.com/OrcaSlicer/OrcaSlicer/discussions/1603
