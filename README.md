@@ -6,9 +6,11 @@
 Containerized web application that exposes OrcaSlicer's CLI slicing capability via a web UI and HTTP API. Upload slicer profiles (printer, process, filament JSONs), then slice STL/3MF files to download GCODE.
 
 <img width="945" height="933" alt="image" src="https://github.com/user-attachments/assets/4f6c19cd-7c73-49b8-930f-1e6972cf2080" />
+
 > Web UI
 
 <img width="947" height="510" alt="image" src="https://github.com/user-attachments/assets/ce0161dd-a0ed-44d7-9c98-93210cc465ec" />
+
 > Viewing GCODE downloaded from this in OrcaSlicer - as you can see, the problem of rotation still needs solving.
 
 ## Quick Start
