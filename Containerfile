@@ -50,7 +50,7 @@ RUN printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie trixi
     apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv \
     xvfb \
-    libgl1 libgl1-mesa-dri libegl1 libopengl0 \
+    libgl1 libgl1-mesa-dri libegl1 libopengl0 libcurl4 \
     libgtk-3-0 \
     libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 \
     libwebkit2gtk-4.1-0 \
