@@ -437,6 +437,8 @@ def slice_model():
 
         # Build command
         orient = request.form.get("orient", "").strip().lower() in ("1", "true", "on", "yes")
+        bed_type = request.form.get("bed_type", "").strip()
+        VALID_BED_TYPES = {"Cool Plate", "Engineering Plate", "High Temp Plate", "Textured PEI Plate"}
 
         cmd = [
             ORCASLICER_BIN,
@@ -449,6 +451,8 @@ def slice_model():
         ]
         if orient:
             cmd.extend(["--orient", "1"])
+        if bed_type in VALID_BED_TYPES:
+            cmd.extend(["--curr-bed-type", bed_type])
         cmd.extend(["--outputdir", str(output_dir), str(model_path)])
 
         result = subprocess.run(

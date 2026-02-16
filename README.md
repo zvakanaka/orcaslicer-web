@@ -16,8 +16,8 @@ Containerized web application that exposes OrcaSlicer's CLI slicing capability v
 ## Quick Start
 
 ```bash
-podman build -t orcaslicer-api .
-podman run -d --name orcaslicer-api -p 5000:5000 -v orcaslicer-profiles:/data orcaslicer-api
+podman build -t orcaslicer-web .
+podman run -d --name orcaslicer-web -p 5000:5000 -v orcaslicer-profiles:/data orcaslicer-web
 ```
 
 Open http://localhost:5000 for the web UI, or use the API directly.
@@ -134,7 +134,7 @@ If you omit the `-v` flag entirely, profiles are stored in the container's ephem
 To use a host directory instead of a named volume:
 
 ```bash
-podman run -d --name orcaslicer-api -p 5000:5000 -v /path/on/host:/data orcaslicer-api
+podman run -d --name orcaslicer-web -p 5000:5000 -v /path/on/host:/data orcaslicer-web
 ```
 
 To inspect or back up the named volume:
@@ -158,6 +158,43 @@ STL uploads and GCODE output are temporary -- they are written to `/tmp/slicing/
 - Runtime deps: xvfb, libgl1, libgtk-3-0, python3, Flask
 - Exposed port: 5000
 - Volume: `/data` for persistent profiles
+
+## Development
+
+Build and run with local source files mounted for quick iteration:
+
+```bash
+podman build -t orcaslicer-web .
+podman run -d --name orcaslicer-web -p 5000:5000 \
+  -v orcaslicer-profiles:/data \
+  -v $(pwd)/app.py:/app/app.py:ro \
+  -v $(pwd)/templates:/app/templates:ro \
+  orcaslicer-web
+```
+
+After editing `app.py` or `templates/index.html`, restart the container to pick up changes:
+
+```bash
+podman restart orcaslicer-web
+```
+
+To rebuild from scratch (e.g. after changing the Containerfile or requirements):
+
+```bash
+podman rm -f orcaslicer-web
+podman build -t orcaslicer-web .
+podman run -d --name orcaslicer-web -p 5000:5000 \
+  -v orcaslicer-profiles:/data \
+  -v $(pwd)/app.py:/app/app.py:ro \
+  -v $(pwd)/templates:/app/templates:ro \
+  orcaslicer-web
+```
+
+To view container logs:
+
+```bash
+podman logs -f orcaslicer-web
+```
 
 ## Inspiration
 

@@ -275,6 +275,26 @@ section h2 {
 }
 .option-check:hover { color: var(--text); }
 
+.option-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.option-select label { white-space: nowrap; }
+.option-select select {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 .slice-btn {
   width: 100%;
   min-height: 48px;
@@ -441,6 +461,16 @@ section h2 {
     </div>
     <div class="file-selected" id="modelFileSelected"></div>
 
+    <div class="option-select">
+      <label for="bedTypeSelect">Bed type</label>
+      <select id="bedTypeSelect">
+        <option>Textured PEI Plate</option>
+        <option>Cool Plate</option>
+        <option>Engineering Plate</option>
+        <option>High Temp Plate</option>
+      </select>
+    </div>
+
     <label class="option-check">
       <input type="checkbox" id="orientCheck">
       <span>Auto-orient model for printing</span>
@@ -577,7 +607,9 @@ section h2 {
       const data = await resp.json();
 
       if (!data.profiles || data.profiles.length === 0) {
-        listEl.innerHTML = '<div class="empty-msg">No ' + cat + ' profiles uploaded yet</div>';
+        if (cat === activeCategory) {
+          listEl.innerHTML = '<div class="empty-msg">No ' + cat + ' profiles uploaded yet</div>';
+        }
         if (selectedProfiles[cat]) {
           selectedProfiles[cat] = null;
           updateSelectionSummary();
@@ -585,6 +617,14 @@ section h2 {
         }
         return;
       }
+
+      if (!selectedProfiles[cat] && data.profiles.length > 0) {
+        selectedProfiles[cat] = data.profiles[0].name;
+        updateSelectionSummary();
+        updateSliceBtn();
+      }
+
+      if (cat !== activeCategory) return;
 
       let html = "";
       data.profiles.forEach(function(p) {
@@ -600,12 +640,10 @@ section h2 {
         html += '</div>';
       });
       listEl.innerHTML = html;
-
-      if (!selectedProfiles[cat] && data.profiles.length > 0) {
-        selectProfile(cat, data.profiles[0].name);
-      }
     } catch (e) {
-      listEl.innerHTML = '<div class="empty-msg">Error loading profiles</div>';
+      if (cat === activeCategory) {
+        listEl.innerHTML = '<div class="empty-msg">Error loading profiles</div>';
+      }
     }
   }
 
@@ -725,6 +763,7 @@ section h2 {
     if (document.getElementById("orientCheck").checked) {
       form.append("orient", "1");
     }
+    form.append("bed_type", document.getElementById("bedTypeSelect").value);
 
     try {
       var resp = await fetch("/api/slice", { method: "POST", body: form });
