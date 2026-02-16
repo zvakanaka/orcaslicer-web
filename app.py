@@ -138,6 +138,55 @@ def ensure_orca_metadata(data_bytes, category):
     return json.dumps(obj, indent=4, ensure_ascii=False).encode("utf-8")
 
 
+def build_gcode_filename(format_template, model_filename, process_data, filament_data):
+    """Build a gcode filename from the filename_format template and profile data."""
+    model_stem = Path(model_filename).stem
+
+    # Build a flat lookup dict from process and filament profiles
+    lookup = {}
+    for data in (process_data, filament_data):
+        for key, val in data.items():
+            if key not in lookup:
+                lookup[key] = val
+
+    # Special-case: input_filename_base is the uploaded model's stem
+    lookup["input_filename_base"] = model_stem
+
+    # Replace {key[N]} indexed patterns first
+    def replace_indexed(m):
+        key = m.group(1)
+        idx = int(m.group(2))
+        val = lookup.get(key)
+        if isinstance(val, list) and idx < len(val):
+            return str(val[idx])
+        return ""
+
+    result = re.sub(r"\{(\w+)\[(\d+)\]\}", replace_indexed, format_template)
+
+    # Replace {key} simple patterns
+    def replace_simple(m):
+        key = m.group(1)
+        val = lookup.get(key)
+        if val is None:
+            return ""
+        if isinstance(val, list):
+            return str(val[0]) if val else ""
+        return str(val)
+
+    result = re.sub(r"\{(\w+)\}", replace_simple, result)
+
+    # Clean up: collapse repeated separators, trim edges
+    result = re.sub(r"[_\-]{2,}", "_", result)
+    result = result.strip("_- ")
+
+    # Ensure .gcode extension
+    if not result.lower().endswith(".gcode"):
+        result = re.sub(r"\.gcode$", "", result, flags=re.IGNORECASE)
+        result += ".gcode"
+
+    return result or f"{model_stem}.gcode"
+
+
 def sanitize_profile_name(name):
     name = name.lower()
     name = re.sub(r"[^a-z0-9-]", "-", name)
@@ -476,7 +525,27 @@ def slice_model():
 
         gcode_path = gcode_files[0]
         gcode_data = BytesIO(gcode_path.read_bytes())
-        gcode_name = gcode_path.name
+
+        # Build gcode filename from process profile's filename_format template
+        model_stem = Path(model_filename).stem
+        try:
+            with open(process_path) as f:
+                process_data = json.load(f)
+        except Exception:
+            process_data = {}
+        try:
+            with open(filament_path) as f:
+                filament_data = json.load(f)
+        except Exception:
+            filament_data = {}
+
+        filename_format = process_data.get("filename_format", "")
+        if filename_format:
+            gcode_name = build_gcode_filename(
+                filename_format, model_filename, process_data, filament_data,
+            )
+        else:
+            gcode_name = f"{model_stem}.gcode"
         elapsed = round(time.time() - start_time, 2)
 
         response = send_file(
