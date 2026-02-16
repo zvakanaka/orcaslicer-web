@@ -554,6 +554,10 @@ def api_help():
             "title": "Slice a model",
             "command": f"curl -X POST {base}/api/slice -F 'model=@model.stl' -F 'printer=my-printer' -F 'process=my-process' -F 'filament=my-filament' -o output.gcode",
         },
+        {
+            "title": "Slice with bed type and auto-orient",
+            "command": f"curl -X POST {base}/api/slice -F 'model=@model.stl' -F 'printer=my-printer' -F 'process=my-process' -F 'filament=my-filament' -F 'bed_type=Textured PEI Plate' -F 'orient=1' -o output.gcode",
+        },
     ])
 
 

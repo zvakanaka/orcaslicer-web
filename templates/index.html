@@ -636,6 +636,7 @@ section h2 {
         html += '<div class="name">' + escapeHtml(p.name) + '</div>';
         html += '<div class="meta">' + formatSize(p.size) + ' &middot; ' + formatDate(p.modified) + '</div>';
         html += '</div>';
+        html += '<button class="delete-btn" onclick="event.stopPropagation(); downloadProfile(\'' + cat + '\', \'' + escapeHtml(p.name) + '\')" title="Download">&darr;</button>';
         html += '<button class="delete-btn" onclick="event.stopPropagation(); deleteProfile(\'' + cat + '\', \'' + escapeHtml(p.name) + '\')" title="Delete">&times;</button>';
         html += '</div>';
       });
@@ -738,6 +739,15 @@ section h2 {
     } catch (e) {
       toast("Delete error: " + e.message);
     }
+  };
+
+  window.downloadProfile = function(cat, name) {
+    var a = document.createElement("a");
+    a.href = "/api/profiles/" + cat + "/" + name;
+    a.download = name + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   // --- Slicing ---

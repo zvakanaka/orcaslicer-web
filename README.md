@@ -94,6 +94,22 @@ curl -X POST http://localhost:5000/api/slice \
 
 The `printer`, `process`, and `filament` fields reference profile names already uploaded to the server. Accepts STL and 3MF files up to 100MB.
 
+Optional parameters:
+
+- `bed_type` -- one of `Textured PEI Plate`, `Cool Plate`, `Engineering Plate`, `High Temp Plate`. Defaults to the printer profile's setting if omitted.
+- `orient` -- set to `1` to auto-orient the model for printing.
+
+```bash
+curl -X POST http://localhost:5000/api/slice \
+  -F 'model=@model.stl' \
+  -F 'printer=my-printer' \
+  -F 'process=my-process' \
+  -F 'filament=my-filament' \
+  -F 'bed_type=Textured PEI Plate' \
+  -F 'orient=1' \
+  -o output.gcode
+```
+
 The response includes headers `X-Slice-Time-Seconds` and `X-Slicer-Stdout` for diagnostics.
 
 ### Check Slicer Status
