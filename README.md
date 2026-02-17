@@ -170,8 +170,8 @@ STL uploads and GCODE output are temporary -- they are written to `/tmp/slicing/
 
 ## Container Details
 
-- Ubuntu 24.04 base with OrcaSlicer nightly AppImage (extracted)
-- Runtime deps: xvfb, libgl1, libgtk-3-0, python3, Flask
+- Debian Trixie (slim) base with OrcaSlicer nightly (AppImage on amd64, flatpak on arm64)
+- Runtime deps: xvfb, libgl1, libgtk-3-0, libwebkit2gtk, python3, Flask
 - Exposed port: 5000
 - Volume: `/data` for persistent profiles
 
