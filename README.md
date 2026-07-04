@@ -212,6 +212,43 @@ To view container logs:
 podman logs -f orcaslicer-web
 ```
 
+## Testing
+
+End-to-end tests run against a live container. They upload profiles, slice real STL models, and compare GCODE output against reference files sliced with the OrcaSlicer GUI.
+
+**Prerequisites:** container running on port 5000, [`uv`](https://github.com/astral-sh/uv) installed.
+
+```bash
+# Start the container if not already running
+podman run -d --name orcaslicer-web -p 5000:5000 -v orcaslicer-profiles:/data orcaslicer-web
+
+# Run the full suite
+uv run --with pytest --with requests pytest tests/ -v
+```
+
+To run against a different host:
+
+```bash
+ORCASLICER_API=http://other-host:5000 uv run --with pytest --with requests pytest tests/ -v
+```
+
+### Test files
+
+`test_files_for_now/` contains:
+
+- `cube_20mm.stl` / `needs_orient.stl` — STL models (generated from `.scad` sources via OpenSCAD)
+- `cube_20mm_PLA_*.gcode` / `needs_orient_PLA_*.gcode` — reference GCODE sliced with the OrcaSlicer GUI (ground truth)
+- Sovol SV08 printer, process, and Protopasta PLA filament profiles
+
+The reference GCODE files were sliced in the GUI with **Textured PEI Plate** bed type at 55°C. The `needs_orient` reference used auto-orient enabled. Tests assert that key GCODE header params (layer height, temperatures, nozzle diameter, filament type, profile IDs) match between the API and the GUI reference.
+
+### Adding new reference files
+
+1. Create or export your STL and profiles
+2. Slice in the OrcaSlicer GUI with your chosen settings, save the `.gcode`
+3. Place the `.gcode` and profiles in `test_files_for_now/`
+4. Add a test case in `tests/test_slice.py` following the existing pattern
+
 ## Inspiration
 
 - Kevin O'Connor (creator of Klipper) [mentioned slicing could be easier](https://youtube.com/watch?v=tODfTn9Yr8s&t=1620s)
