@@ -5,6 +5,11 @@ data/
 *.stl
 *.3mf
 
+# Test fixtures are intentionally tracked despite the patterns above.
+!tests/fixtures/**/*.gcode
+!tests/fixtures/**/*.stl
+!tests/fixtures/**/*.3mf
+
 # Editor cache/swap files
 *~
 *.swp

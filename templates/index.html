@@ -284,7 +284,8 @@ section h2 {
   color: var(--muted);
 }
 .option-select label { white-space: nowrap; }
-.option-select select {
+.option-select select,
+.option-select input[type="number"] {
   flex: 1;
   padding: 6px 8px;
   border: 1px solid var(--border);
@@ -293,7 +294,10 @@ section h2 {
   color: var(--text);
   font-size: 0.85rem;
   cursor: pointer;
+  font-family: inherit;
 }
+.option-select input[type="number"] { cursor: text; }
+.option-select input[type="number"]::placeholder { color: var(--muted); }
 
 .slice-btn {
   width: 100%;
@@ -476,6 +480,25 @@ section h2 {
       <span>Auto-orient model for printing</span>
     </label>
 
+    <div class="option-select">
+      <label for="layerHeightInput">Layer height</label>
+      <input type="number" id="layerHeightInput" step="0.01" min="0.04" max="0.6" placeholder="profile default">
+    </div>
+
+    <div class="option-select">
+      <label for="fillDensityInput">Infill %</label>
+      <input type="number" id="fillDensityInput" step="1" min="0" max="100" placeholder="profile default">
+    </div>
+
+    <div class="option-select">
+      <label for="supportSelect">Supports</label>
+      <select id="supportSelect">
+        <option value="">Profile default</option>
+        <option value="1">Enabled</option>
+        <option value="0">Disabled</option>
+      </select>
+    </div>
+
     <button class="slice-btn" id="sliceBtn" disabled onclick="sliceModel()">Slice &amp; Download</button>
 
     <div class="status-bar" id="statusBar"></div>
@@ -502,6 +525,29 @@ section h2 {
   let selectedProfiles = { printer: null, process: null, filament: null };
   let profileFileHandle = null;
   let modelFileHandle = null;
+
+  const PREFS_KEY = "orcaslicer-web:prefs";
+  const DEFAULT_BED_TYPE = "Textured PEI Plate";
+
+  // --- Prefs (localStorage) ---
+
+  function loadPrefs() {
+    try {
+      return JSON.parse(localStorage.getItem(PREFS_KEY)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function savePrefs(patch) {
+    const prefs = loadPrefs();
+    Object.assign(prefs, patch);
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    } catch (e) { /* storage unavailable (private browsing, quota) */ }
+  }
+
+  const prefs = loadPrefs();
 
   // --- Utils ---
 
@@ -598,6 +644,25 @@ section h2 {
 
   // --- Profile CRUD ---
 
+  function saveSelectionPrefs() {
+    savePrefs({ selectedProfiles: selectedProfiles });
+  }
+
+  // Picks the profile to preselect for a category: the most recently used
+  // one (from prefs) if it still exists, otherwise a sensible first-run
+  // default (a PLA filament, or just the first profile).
+  function pickDefaultProfile(cat, profiles) {
+    const saved = prefs.selectedProfiles && prefs.selectedProfiles[cat];
+    if (saved && profiles.some(function(p) { return p.name === saved; })) {
+      return saved;
+    }
+    if (cat === "filament") {
+      const pla = profiles.find(function(p) { return /pla/i.test(p.name); });
+      if (pla) return pla.name;
+    }
+    return profiles[0].name;
+  }
+
   async function loadProfiles(cat) {
     cat = cat || activeCategory;
     const listEl = document.getElementById("profileList");
@@ -619,9 +684,10 @@ section h2 {
       }
 
       if (!selectedProfiles[cat] && data.profiles.length > 0) {
-        selectedProfiles[cat] = data.profiles[0].name;
+        selectedProfiles[cat] = pickDefaultProfile(cat, data.profiles);
         updateSelectionSummary();
         updateSliceBtn();
+        saveSelectionPrefs();
       }
 
       if (cat !== activeCategory) return;
@@ -665,6 +731,7 @@ section h2 {
     }
     updateSelectionSummary();
     updateSliceBtn();
+    saveSelectionPrefs();
   };
 
   function updateSelectionSummary() {
@@ -775,6 +842,13 @@ section h2 {
     }
     form.append("bed_type", document.getElementById("bedTypeSelect").value);
 
+    var layerHeight = document.getElementById("layerHeightInput").value.trim();
+    if (layerHeight) form.append("layer_height", layerHeight);
+    var fillDensity = document.getElementById("fillDensityInput").value.trim();
+    if (fillDensity) form.append("fill_density", fillDensity);
+    var support = document.getElementById("supportSelect").value;
+    if (support) form.append("enable_support", support);
+
     try {
       var resp = await fetch("/api/slice", { method: "POST", body: form });
 
@@ -851,8 +925,41 @@ section h2 {
     if (e.key === "Escape") closeHelp();
   });
 
+  // --- Print options (bed type, orient, layer height, infill, supports) ---
+
+  function initOptionControls() {
+    const bedTypeSelect = document.getElementById("bedTypeSelect");
+    const orientCheck = document.getElementById("orientCheck");
+    const layerHeightInput = document.getElementById("layerHeightInput");
+    const fillDensityInput = document.getElementById("fillDensityInput");
+    const supportSelect = document.getElementById("supportSelect");
+
+    bedTypeSelect.value = prefs.bedType || DEFAULT_BED_TYPE;
+    orientCheck.checked = !!prefs.orient;
+    if (prefs.layerHeight) layerHeightInput.value = prefs.layerHeight;
+    if (prefs.fillDensity) fillDensityInput.value = prefs.fillDensity;
+    if (prefs.support) supportSelect.value = prefs.support;
+
+    bedTypeSelect.addEventListener("change", function() {
+      savePrefs({ bedType: bedTypeSelect.value });
+    });
+    orientCheck.addEventListener("change", function() {
+      savePrefs({ orient: orientCheck.checked });
+    });
+    layerHeightInput.addEventListener("input", function() {
+      savePrefs({ layerHeight: layerHeightInput.value.trim() });
+    });
+    fillDensityInput.addEventListener("input", function() {
+      savePrefs({ fillDensity: fillDensityInput.value.trim() });
+    });
+    supportSelect.addEventListener("change", function() {
+      savePrefs({ support: supportSelect.value });
+    });
+  }
+
   // --- Init ---
 
+  initOptionControls();
   loadProfiles("printer");
   loadProfiles("process");
   loadProfiles("filament");

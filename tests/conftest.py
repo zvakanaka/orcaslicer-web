@@ -6,20 +6,22 @@ import requests
 from pathlib import Path
 
 API_BASE = os.environ.get("ORCASLICER_API", "http://localhost:5000")
-TEST_FILES = Path(__file__).parent.parent / "test_files_for_now"
+FIXTURES = Path(__file__).parent / "fixtures"
+MODELS_DIR = FIXTURES / "models"
+REFERENCE_GCODE_DIR = FIXTURES / "reference_gcode"
 
 # Source files and expected sanitized API names for the three Sovol SV08 profiles
 PROFILE_SOURCES = {
     "printer": {
-        "path": TEST_FILES / "printer" / "Sovol SV08 0.4 nozzle - Tuned.json",
+        "path": FIXTURES / "profiles" / "printer" / "Sovol SV08 0.4 nozzle - Tuned.json",
         "name": "sovol-sv08-0-4-nozzle-tuned",
     },
     "process": {
-        "path": TEST_FILES / "0.20mm Standard @Sovol SV08 - Tuned.json",
+        "path": FIXTURES / "profiles" / "process" / "0.20mm Standard @Sovol SV08 - Tuned.json",
         "name": "0-20mm-standard-sovol-sv08-tuned",
     },
     "filament": {
-        "path": TEST_FILES / "Protopasta PLA.json",
+        "path": FIXTURES / "profiles" / "filament" / "Protopasta PLA.json",
         "name": "protopasta-pla",
     },
 }
