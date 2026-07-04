@@ -58,8 +58,16 @@ def build_system_profile_index():
         log.warning("Bundled profiles dir not found: %s", BUNDLED_PROFILES_DIR)
         return
 
+    # Sort so OrcaFilamentLibrary is processed last — its base profiles (e.g.
+    # fdm_filament_pla) are the canonical system definitions and must win over
+    # vendor-specific copies of the same profile name.
+    vendor_dirs = sorted(
+        BUNDLED_PROFILES_DIR.iterdir(),
+        key=lambda p: (p.name == "OrcaFilamentLibrary", p.name),
+    )
+
     count = 0
-    for vendor_dir in BUNDLED_PROFILES_DIR.iterdir():
+    for vendor_dir in vendor_dirs:
         if not vendor_dir.is_dir():
             continue
         for subdir in ("machine", "process", "filament"):
@@ -71,7 +79,7 @@ def build_system_profile_index():
                     with open(json_file) as f:
                         obj = json.load(f)
                     name = obj.get("name")
-                    if name and name not in _system_profile_index[subdir]:
+                    if name:
                         _system_profile_index[subdir][name] = json_file
                         count += 1
                 except Exception:
