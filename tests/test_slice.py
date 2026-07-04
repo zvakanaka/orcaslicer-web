@@ -1,14 +1,14 @@
 import pytest
 import requests
 from pathlib import Path
-from conftest import TEST_FILES, ASSERT_PARAMS, parse_gcode_header
+from conftest import MODELS_DIR, REFERENCE_GCODE_DIR, ASSERT_PARAMS, parse_gcode_header
 
 BED_TYPE = "Textured PEI Plate"
 
 
 def reference_gcode(prefix: str) -> bytes:
-    matches = list(TEST_FILES.glob(f"{prefix}_PLA*.gcode"))
-    assert matches, f"No reference GCODE found for prefix '{prefix}' in {TEST_FILES}"
+    matches = list(REFERENCE_GCODE_DIR.glob(f"{prefix}_PLA*.gcode"))
+    assert matches, f"No reference GCODE found for prefix '{prefix}' in {REFERENCE_GCODE_DIR}"
     return matches[0].read_bytes()
 
 
@@ -21,7 +21,7 @@ def slice_model(api, core_profiles, model_name, *, orient=False, bed_type=BED_TY
     }
     if orient:
         data["orient"] = "1"
-    with open(TEST_FILES / model_name, "rb") as f:
+    with open(MODELS_DIR / model_name, "rb") as f:
         return requests.post(
             f"{api}/api/slice",
             files={"model": (model_name, f, "application/octet-stream")},
@@ -115,6 +115,84 @@ def test_slice_3mf_accepted(api, core_profiles):
     assert r.status_code != 400
 
 
+# --- Print option overrides ---
+
+def test_slice_layer_height_override_reflected_in_gcode(api, core_profiles):
+    r = slice_model(api, core_profiles, "cube_20mm.stl")
+    baseline_layer_height = parse_gcode_header(r.content).get("layer_height")
+
+    data = {
+        "printer": core_profiles["printer"],
+        "process": core_profiles["process"],
+        "filament": core_profiles["filament"],
+        "bed_type": BED_TYPE,
+        "layer_height": "0.28",
+    }
+    with open(MODELS_DIR / "cube_20mm.stl", "rb") as f:
+        r = requests.post(
+            f"{api}/api/slice",
+            files={"model": ("cube_20mm.stl", f, "application/octet-stream")},
+            data=data,
+        )
+    assert r.status_code == 200, f"Slice failed: {r.text}"
+    overridden_layer_height = parse_gcode_header(r.content).get("layer_height")
+    assert overridden_layer_height == "0.28"
+    assert overridden_layer_height != baseline_layer_height
+
+
+def test_slice_invalid_layer_height_returns_400(api, core_profiles):
+    data = {
+        "printer": core_profiles["printer"],
+        "process": core_profiles["process"],
+        "filament": core_profiles["filament"],
+        "layer_height": "not-a-number",
+    }
+    with open(MODELS_DIR / "cube_20mm.stl", "rb") as f:
+        r = requests.post(
+            f"{api}/api/slice",
+            files={"model": ("cube_20mm.stl", f, "application/octet-stream")},
+            data=data,
+        )
+    assert r.status_code == 400
+
+
+def test_slice_out_of_range_fill_density_returns_400(api, core_profiles):
+    data = {
+        "printer": core_profiles["printer"],
+        "process": core_profiles["process"],
+        "filament": core_profiles["filament"],
+        "fill_density": "150",
+    }
+    with open(MODELS_DIR / "cube_20mm.stl", "rb") as f:
+        r = requests.post(
+            f"{api}/api/slice",
+            files={"model": ("cube_20mm.stl", f, "application/octet-stream")},
+            data=data,
+        )
+    assert r.status_code == 400
+
+
+def test_slice_overrides_do_not_mutate_stored_profile(api, core_profiles):
+    before = requests.get(f"{api}/api/profiles/process/{core_profiles['process']}").content
+    slice_model(api, core_profiles, "cube_20mm.stl")
+    data = {
+        "printer": core_profiles["printer"],
+        "process": core_profiles["process"],
+        "filament": core_profiles["filament"],
+        "layer_height": "0.3",
+        "fill_density": "80",
+        "enable_support": "1",
+    }
+    with open(MODELS_DIR / "cube_20mm.stl", "rb") as f:
+        requests.post(
+            f"{api}/api/slice",
+            files={"model": ("cube_20mm.stl", f, "application/octet-stream")},
+            data=data,
+        )
+    after = requests.get(f"{api}/api/profiles/process/{core_profiles['process']}").content
+    assert before == after
+
+
 # --- Error cases ---
 
 def test_slice_missing_model_field_returns_400(api, core_profiles):
@@ -143,7 +221,7 @@ def test_slice_unsupported_model_type_returns_400(api, core_profiles):
 
 
 def test_slice_missing_all_profile_params_returns_400(api):
-    with open(TEST_FILES / "cube_20mm.stl", "rb") as f:
+    with open(MODELS_DIR / "cube_20mm.stl", "rb") as f:
         r = requests.post(
             f"{api}/api/slice",
             files={"model": ("cube_20mm.stl", f, "application/octet-stream")},
@@ -152,7 +230,7 @@ def test_slice_missing_all_profile_params_returns_400(api):
 
 
 def test_slice_nonexistent_profiles_returns_404(api):
-    with open(TEST_FILES / "cube_20mm.stl", "rb") as f:
+    with open(MODELS_DIR / "cube_20mm.stl", "rb") as f:
         r = requests.post(
             f"{api}/api/slice",
             files={"model": ("cube_20mm.stl", f, "application/octet-stream")},
@@ -166,7 +244,7 @@ def test_slice_nonexistent_profiles_returns_404(api):
 
 
 def test_slice_partial_profiles_returns_400(api, core_profiles):
-    with open(TEST_FILES / "cube_20mm.stl", "rb") as f:
+    with open(MODELS_DIR / "cube_20mm.stl", "rb") as f:
         r = requests.post(
             f"{api}/api/slice",
             files={"model": ("cube_20mm.stl", f, "application/octet-stream")},
