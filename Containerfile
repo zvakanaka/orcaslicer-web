@@ -2,6 +2,10 @@
 FROM debian:trixie-slim AS extract
 
 ARG TARGETARCH=amd64
+# Pinned to nightly-builds published 2024-11-21. To upgrade: download both assets,
+# run `sha256sum` on each, and update these args.
+ARG ORCASLICER_AMD64_SHA256=97f9870c4dbaf0c855540eb368e4760c3a2d555254e9e2f3ec6ebe2e440a551f
+ARG ORCASLICER_ARM64_SHA256=92dd91599ca1c7f7fcd0ff81acc70e6501db8e0159d69c8cd9182da9274944c3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -18,6 +22,7 @@ WORKDIR /tmp
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
       curl -fSL -o OrcaSlicer.AppImage \
         "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/nightly-builds/OrcaSlicer_Linux_AppImage_Ubuntu2404_nightly.AppImage" && \
+      echo "${ORCASLICER_AMD64_SHA256}  OrcaSlicer.AppImage" | sha256sum --check && \
       chmod +x OrcaSlicer.AppImage && \
       ./OrcaSlicer.AppImage --appimage-extract && \
       mv squashfs-root /opt/orcaslicer && \
@@ -26,6 +31,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
       apt-get update && apt-get install -y --no-install-recommends flatpak ostree && \
       curl -fSL -o OrcaSlicer.flatpak \
         "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/nightly-builds/OrcaSlicer-Linux-flatpak_nightly_aarch64.flatpak" && \
+      echo "${ORCASLICER_ARM64_SHA256}  OrcaSlicer.flatpak" | sha256sum --check && \
       ostree init --repo=/tmp/repo --mode=bare-user && \
       flatpak build-import-bundle /tmp/repo OrcaSlicer.flatpak && \
       REF=$(ostree refs --repo=/tmp/repo | head -1) && \
