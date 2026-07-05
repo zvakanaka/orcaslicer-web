@@ -24,6 +24,14 @@ BUNDLED_PROFILES_DIR = Path(os.environ.get(
     "BUNDLED_PROFILES_DIR",
     "/opt/orcaslicer/resources/profiles",
 ))
+# Starter profiles (Sovol SV08 + Protopasta PLA) shipped with the test suite.
+# Seeded into an empty PROFILES_DIR/<category> on startup so a fresh instance
+# is immediately usable; once a category has any profile (seeded, uploaded, or
+# customized), it's left alone.
+DEFAULT_PROFILES_DIR = Path(os.environ.get(
+    "DEFAULT_PROFILES_DIR",
+    str(Path(__file__).parent / "tests" / "fixtures" / "profiles"),
+))
 SLICE_TIMEOUT = 300  # seconds
 
 VALID_CATEGORIES = {"printer", "process", "filament"}
@@ -50,6 +58,11 @@ current_job = {"busy": False, "model": None, "started": None}
 # Index of bundled system profiles: {subdir: {name: filepath}}
 # Built once at startup, used for resolving "inherits" in user profiles.
 _system_profile_index = {"machine": {}, "process": {}, "filament": {}}
+
+# Names of profiles seeded from DEFAULT_PROFILES_DIR, per category. Used to
+# flag them as defaults in the UI; a name is dropped once the profile is
+# replaced, renamed, or deleted (i.e. no longer "the untouched default").
+_default_profile_names = {"printer": set(), "process": set(), "filament": set()}
 
 
 def build_system_profile_index():
@@ -264,6 +277,47 @@ def sanitize_profile_name(name):
     return name
 
 
+def seed_default_profiles():
+    """Copy starter profiles into any category that has none yet.
+
+    Mirrors a normal upload (metadata injection, inherits resolution, name
+    sanitizing) so seeded profiles are indistinguishable from user uploads
+    except for the is_default flag. Categories that already have a profile
+    (from a prior seed, a volume-mounted upload, etc.) are left untouched.
+    """
+    if not DEFAULT_PROFILES_DIR.is_dir():
+        log.warning("Default profiles dir not found: %s", DEFAULT_PROFILES_DIR)
+        return
+
+    for category in VALID_CATEGORIES:
+        profile_dir = PROFILES_DIR / category
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        if any(profile_dir.glob("*.json")):
+            continue
+
+        src_dir = DEFAULT_PROFILES_DIR / category
+        if not src_dir.is_dir():
+            continue
+
+        for src_file in sorted(src_dir.glob("*.json")):
+            try:
+                data = ensure_orca_metadata(src_file.read_bytes(), category)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                log.warning("Skipping invalid default profile %s", src_file)
+                continue
+
+            name = sanitize_profile_name(src_file.stem)
+            if not name:
+                continue
+
+            get_profile_path(category, name).write_bytes(data)
+            _default_profile_names[category].add(name)
+
+        if _default_profile_names[category]:
+            log.info("Seeded %d default %s profile(s)",
+                      len(_default_profile_names[category]), category)
+
+
 def validate_category(category):
     if category not in VALID_CATEGORIES:
         return jsonify(error=f"Invalid category: {category}. Must be one of: {', '.join(sorted(VALID_CATEGORIES))}"), 400
@@ -282,6 +336,7 @@ def profile_info(category, name):
         "category": category,
         "size": stat.st_size,
         "modified": stat.st_mtime,
+        "is_default": name in _default_profile_names.get(category, set()),
     }
 
 
@@ -350,6 +405,7 @@ def list_profiles(category):
             "name": name,
             "size": stat.st_size,
             "modified": stat.st_mtime,
+            "is_default": name in _default_profile_names.get(category, set()),
         })
 
     return jsonify(category=category, profiles=profiles)
@@ -434,6 +490,7 @@ def replace_profile(category, name):
 
     path = get_profile_path(category, name)
     path.write_bytes(data)
+    _default_profile_names.get(category, set()).discard(name)
     return jsonify(**profile_info(category, name))
 
 
@@ -463,6 +520,7 @@ def rename_profile(category, name):
         return jsonify(error=f"Profile '{new_name}' already exists in {category}"), 409
 
     path.rename(new_path)
+    _default_profile_names.get(category, set()).discard(name)
     return jsonify(**profile_info(category, new_name))
 
 
@@ -477,6 +535,7 @@ def delete_profile(category, name):
         return jsonify(error=f"Profile '{name}' not found in {category}"), 404
 
     path.unlink()
+    _default_profile_names.get(category, set()).discard(name)
     return jsonify(deleted=name, category=category)
 
 
@@ -724,5 +783,6 @@ if __name__ == "__main__":
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
     build_system_profile_index()
+    seed_default_profiles()
 
     app.run(host=host, port=port)
