@@ -75,6 +75,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY app.py /app/app.py
 COPY templates /app/templates
+COPY tests/fixtures/profiles /app/tests/fixtures/profiles
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 

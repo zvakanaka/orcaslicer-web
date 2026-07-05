@@ -24,6 +24,10 @@ Open http://localhost:5000 for the web UI, or use the API directly.
 
 ## Web UI
 
+Printer, process, and filament profiles are managed together in one unified view (upload, select, delete) rather than switching between separate tabs.
+
+On first startup with no profiles uploaded, each category is seeded from the Sovol SV08 / Protopasta PLA starter profiles in `tests/fixtures/profiles/` (shown with a "Default" badge) so the app is immediately usable. Seeding only happens per-category while it's empty -- once you upload, replace, or delete a profile in a category, it's left alone.
+
 On first use, the filament and bed type selectors default to a PLA filament profile (matched by name) and `Textured PEI Plate`. After that, the UI remembers the most recently used printer/process/filament profiles, bed type, auto-orient setting, and print option overrides in the browser's `localStorage`, and preselects them on the next visit.
 
 The slice form also lets you override a few common process profile settings per job -- layer height, infill density, and support generation -- without editing the stored profile. Leave a field blank to use the profile's own setting.

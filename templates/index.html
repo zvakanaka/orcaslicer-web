@@ -83,32 +83,47 @@ section h2 {
   margin-bottom: 12px;
 }
 
-/* Tabs */
-.tabs {
-  display: flex;
-  gap: 0;
-  margin-bottom: 16px;
+/* Profile groups (printer/process/filament shown together, unified) */
+.profile-group {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
+.profile-group:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
 
-.tab {
-  min-height: 44px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
+.profile-group-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.profile-group-header h3 {
   font-size: 0.9rem;
-  cursor: pointer;
-  padding: 0 16px;
-  transition: all 0.15s;
-  margin-bottom: -1px;
+  font-weight: 600;
+  color: var(--text);
 }
-.tab.active {
+.profile-group-selected {
+  font-size: 0.8rem;
   color: var(--accent);
-  border-bottom-color: var(--accent);
-  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.tab:hover:not(.active) { color: var(--text); }
+.profile-group-selected.none { color: var(--muted); font-style: italic; }
+
+.default-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
 
 /* Drop zone */
 .drop-zone {
@@ -419,44 +434,64 @@ section h2 {
 
   <section>
     <h2>Profiles</h2>
-    <div class="tabs">
-      <button class="tab active" data-cat="printer" onclick="switchTab('printer')">Printer</button>
-      <button class="tab" data-cat="process" onclick="switchTab('process')">Process</button>
-      <button class="tab" data-cat="filament" onclick="switchTab('filament')">Filament</button>
+
+    <div class="profile-group" data-cat="printer">
+      <div class="profile-group-header">
+        <h3>Printer</h3>
+        <span class="profile-group-selected none" id="selPrinter">none selected</span>
+      </div>
+      <div class="drop-zone" id="profileDropZone-printer">
+        <input type="file" id="profileFileInput-printer" accept=".json">
+        <div class="label">Drop JSON profile here or tap to browse</div>
+        <div class="hint">Uploading to: printer</div>
+      </div>
+      <div class="file-selected" id="profileFileSelected-printer"></div>
+      <div class="name-row">
+        <input type="text" id="profileNameInput-printer" placeholder="Profile name (optional)">
+        <button class="upload-btn" id="profileUploadBtn-printer" disabled onclick="uploadProfile('printer')">Upload</button>
+      </div>
+      <div class="profile-list" id="profileList-printer"></div>
     </div>
 
-    <div class="drop-zone" id="profileDropZone">
-      <input type="file" id="profileFileInput" accept=".json">
-      <div class="label">Drop JSON profile here or tap to browse</div>
-      <div class="hint" id="profileDropHint">Uploading to: printer</div>
+    <div class="profile-group" data-cat="process">
+      <div class="profile-group-header">
+        <h3>Process</h3>
+        <span class="profile-group-selected none" id="selProcess">none selected</span>
+      </div>
+      <div class="drop-zone" id="profileDropZone-process">
+        <input type="file" id="profileFileInput-process" accept=".json">
+        <div class="label">Drop JSON profile here or tap to browse</div>
+        <div class="hint">Uploading to: process</div>
+      </div>
+      <div class="file-selected" id="profileFileSelected-process"></div>
+      <div class="name-row">
+        <input type="text" id="profileNameInput-process" placeholder="Profile name (optional)">
+        <button class="upload-btn" id="profileUploadBtn-process" disabled onclick="uploadProfile('process')">Upload</button>
+      </div>
+      <div class="profile-list" id="profileList-process"></div>
     </div>
-    <div class="file-selected" id="profileFileSelected"></div>
 
-    <div class="name-row">
-      <input type="text" id="profileNameInput" placeholder="Profile name (optional)">
-      <button class="upload-btn" id="profileUploadBtn" disabled onclick="uploadProfile()">Upload</button>
+    <div class="profile-group" data-cat="filament">
+      <div class="profile-group-header">
+        <h3>Filament</h3>
+        <span class="profile-group-selected none" id="selFilament">none selected</span>
+      </div>
+      <div class="drop-zone" id="profileDropZone-filament">
+        <input type="file" id="profileFileInput-filament" accept=".json">
+        <div class="label">Drop JSON profile here or tap to browse</div>
+        <div class="hint">Uploading to: filament</div>
+      </div>
+      <div class="file-selected" id="profileFileSelected-filament"></div>
+      <div class="name-row">
+        <input type="text" id="profileNameInput-filament" placeholder="Profile name (optional)">
+        <button class="upload-btn" id="profileUploadBtn-filament" disabled onclick="uploadProfile('filament')">Upload</button>
+      </div>
+      <div class="profile-list" id="profileList-filament"></div>
     </div>
-
-    <div class="profile-list" id="profileList"></div>
   </section>
 
   <section>
     <h2>Slice</h2>
-
-    <div class="selection-summary" id="selectionSummary">
-      <div class="row">
-        <span class="label">Printer</span>
-        <span class="value none" id="selPrinter">none selected</span>
-      </div>
-      <div class="row">
-        <span class="label">Process</span>
-        <span class="value none" id="selProcess">none selected</span>
-      </div>
-      <div class="row">
-        <span class="label">Filament</span>
-        <span class="value none" id="selFilament">none selected</span>
-      </div>
-    </div>
 
     <div class="drop-zone" id="modelDropZone">
       <input type="file" id="modelFileInput" accept=".stl,.3mf">
@@ -521,9 +556,9 @@ section h2 {
   "use strict";
 
   // --- State ---
-  let activeCategory = "printer";
+  const CATEGORIES = ["printer", "process", "filament"];
   let selectedProfiles = { printer: null, process: null, filament: null };
-  let profileFileHandle = null;
+  let profileFileHandles = { printer: null, process: null, filament: null };
   let modelFileHandle = null;
 
   const PREFS_KEY = "orcaslicer-web:prefs";
@@ -579,22 +614,6 @@ section h2 {
     return resp;
   }
 
-  // --- Tabs ---
-
-  window.switchTab = function(cat) {
-    activeCategory = cat;
-    document.querySelectorAll(".tab").forEach(function(t) {
-      t.classList.toggle("active", t.dataset.cat === cat);
-    });
-    document.getElementById("profileDropHint").textContent = "Uploading to: " + cat;
-    profileFileHandle = null;
-    document.getElementById("profileFileSelected").textContent = "";
-    document.getElementById("profileFileInput").value = "";
-    document.getElementById("profileNameInput").value = "";
-    document.getElementById("profileUploadBtn").disabled = true;
-    loadProfiles(cat);
-  };
-
   // --- Profile drop zone ---
 
   function setupDropZone(zoneId, inputId, onFile) {
@@ -626,14 +645,16 @@ section h2 {
     });
   }
 
-  setupDropZone("profileDropZone", "profileFileInput", function(file) {
-    profileFileHandle = file;
-    document.getElementById("profileFileSelected").textContent = file.name;
-    document.getElementById("profileUploadBtn").disabled = false;
-    const nameInput = document.getElementById("profileNameInput");
-    if (!nameInput.value) {
-      nameInput.value = file.name.replace(/\.json$/i, "");
-    }
+  CATEGORIES.forEach(function(cat) {
+    setupDropZone("profileDropZone-" + cat, "profileFileInput-" + cat, function(file) {
+      profileFileHandles[cat] = file;
+      document.getElementById("profileFileSelected-" + cat).textContent = file.name;
+      document.getElementById("profileUploadBtn-" + cat).disabled = false;
+      const nameInput = document.getElementById("profileNameInput-" + cat);
+      if (!nameInput.value) {
+        nameInput.value = file.name.replace(/\.json$/i, "");
+      }
+    });
   });
 
   setupDropZone("modelDropZone", "modelFileInput", function(file) {
@@ -664,17 +685,14 @@ section h2 {
   }
 
   async function loadProfiles(cat) {
-    cat = cat || activeCategory;
-    const listEl = document.getElementById("profileList");
+    const listEl = document.getElementById("profileList-" + cat);
 
     try {
       const resp = await api("GET", "/api/profiles/" + cat);
       const data = await resp.json();
 
       if (!data.profiles || data.profiles.length === 0) {
-        if (cat === activeCategory) {
-          listEl.innerHTML = '<div class="empty-msg">No ' + cat + ' profiles uploaded yet</div>';
-        }
+        listEl.innerHTML = '<div class="empty-msg">No ' + cat + ' profiles uploaded yet</div>';
         if (selectedProfiles[cat]) {
           selectedProfiles[cat] = null;
           updateSelectionSummary();
@@ -690,16 +708,15 @@ section h2 {
         saveSelectionPrefs();
       }
 
-      if (cat !== activeCategory) return;
-
       let html = "";
       data.profiles.forEach(function(p) {
         const checked = selectedProfiles[cat] === p.name ? "checked" : "";
         const selectedClass = selectedProfiles[cat] === p.name ? " selected" : "";
+        const badge = p.is_default ? '<span class="default-badge">Default</span>' : "";
         html += '<div class="profile-item' + selectedClass + '" data-name="' + p.name + '" onclick="selectProfile(\'' + cat + '\', \'' + p.name + '\')">';
         html += '<input type="radio" name="profile-' + cat + '" ' + checked + ' tabindex="-1">';
         html += '<div class="info">';
-        html += '<div class="name">' + escapeHtml(p.name) + '</div>';
+        html += '<div class="name">' + escapeHtml(p.name) + badge + '</div>';
         html += '<div class="meta">' + formatSize(p.size) + ' &middot; ' + formatDate(p.modified) + '</div>';
         html += '</div>';
         html += '<button class="delete-btn" onclick="event.stopPropagation(); downloadProfile(\'' + cat + '\', \'' + escapeHtml(p.name) + '\')" title="Download">&darr;</button>';
@@ -708,9 +725,7 @@ section h2 {
       });
       listEl.innerHTML = html;
     } catch (e) {
-      if (cat === activeCategory) {
-        listEl.innerHTML = '<div class="empty-msg">Error loading profiles</div>';
-      }
+      listEl.innerHTML = '<div class="empty-msg">Error loading profiles</div>';
     }
   }
 
@@ -722,27 +737,25 @@ section h2 {
 
   window.selectProfile = function(cat, name) {
     selectedProfiles[cat] = name;
-    if (cat === activeCategory) {
-      document.querySelectorAll("#profileList .profile-item").forEach(function(el) {
-        const isSelected = el.dataset.name === name;
-        el.classList.toggle("selected", isSelected);
-        el.querySelector("input[type=radio]").checked = isSelected;
-      });
-    }
+    document.querySelectorAll("#profileList-" + cat + " .profile-item").forEach(function(el) {
+      const isSelected = el.dataset.name === name;
+      el.classList.toggle("selected", isSelected);
+      el.querySelector("input[type=radio]").checked = isSelected;
+    });
     updateSelectionSummary();
     updateSliceBtn();
     saveSelectionPrefs();
   };
 
   function updateSelectionSummary() {
-    ["printer", "process", "filament"].forEach(function(cat) {
+    CATEGORIES.forEach(function(cat) {
       var el = document.getElementById("sel" + cat.charAt(0).toUpperCase() + cat.slice(1));
       if (selectedProfiles[cat]) {
         el.textContent = selectedProfiles[cat];
-        el.className = "value";
+        el.className = "profile-group-selected";
       } else {
         el.textContent = "none selected";
-        el.className = "value none";
+        el.className = "profile-group-selected none";
       }
     });
   }
@@ -752,29 +765,29 @@ section h2 {
     document.getElementById("sliceBtn").disabled = !ready;
   }
 
-  window.uploadProfile = async function() {
-    if (!profileFileHandle) return;
+  window.uploadProfile = async function(cat) {
+    if (!profileFileHandles[cat]) return;
 
-    var btn = document.getElementById("profileUploadBtn");
+    var btn = document.getElementById("profileUploadBtn-" + cat);
     btn.disabled = true;
     btn.textContent = "...";
 
-    var name = document.getElementById("profileNameInput").value.trim();
+    var name = document.getElementById("profileNameInput-" + cat).value.trim();
     var form = new FormData();
-    form.append("file", profileFileHandle);
+    form.append("file", profileFileHandles[cat]);
     if (name) form.append("name", name);
 
     try {
-      var resp = await api("POST", "/api/profiles/" + activeCategory, { body: form });
+      var resp = await api("POST", "/api/profiles/" + cat, { body: form });
       var data = await resp.json();
 
       if (resp.ok) {
         toast("Uploaded: " + data.name);
-        profileFileHandle = null;
-        document.getElementById("profileFileSelected").textContent = "";
-        document.getElementById("profileFileInput").value = "";
-        document.getElementById("profileNameInput").value = "";
-        loadProfiles(activeCategory);
+        profileFileHandles[cat] = null;
+        document.getElementById("profileFileSelected-" + cat).textContent = "";
+        document.getElementById("profileFileInput-" + cat).value = "";
+        document.getElementById("profileNameInput-" + cat).value = "";
+        loadProfiles(cat);
       } else {
         toast(data.error || "Upload failed");
       }
@@ -782,7 +795,7 @@ section h2 {
       toast("Upload error: " + e.message);
     }
 
-    btn.disabled = !profileFileHandle;
+    btn.disabled = !profileFileHandles[cat];
     btn.textContent = "Upload";
   };
 
