@@ -22,6 +22,16 @@ podman run -d --name orcaslicer-web -p 5000:5000 -v orcaslicer-profiles:/data or
 
 Open http://localhost:5000 for the web UI, or use the API directly.
 
+## Web UI
+
+Printer, process, and filament profiles are managed together in one unified view (upload, select, delete) rather than switching between separate tabs.
+
+On first startup with no profiles uploaded, each category is seeded from the Sovol SV08 / Protopasta PLA starter profiles in `tests/fixtures/profiles/` (shown with a "Default" badge) so the app is immediately usable. Seeding only happens per-category while it's empty -- once you upload, replace, or delete a profile in a category, it's left alone.
+
+On first use, the filament and bed type selectors default to a PLA filament profile (matched by name) and `Textured PEI Plate`. After that, the UI remembers the most recently used printer/process/filament profiles, bed type, auto-orient setting, and print option overrides in the browser's `localStorage`, and preselects them on the next visit.
+
+The slice form also lets you override a few common process profile settings per job -- layer height, infill density, and support generation -- without editing the stored profile. Leave a field blank to use the profile's own setting.
+
 ## API
 
 ### Health Check
@@ -98,6 +108,11 @@ Optional parameters:
 
 - `bed_type` -- one of `Textured PEI Plate`, `Cool Plate`, `Engineering Plate`, `High Temp Plate`. Defaults to the printer profile's setting if omitted.
 - `orient` -- set to `1` to auto-orient the model for printing.
+- `layer_height` -- mm, between `0.04` and `0.6`. Overrides the process profile's layer height for this job only.
+- `fill_density` -- integer percentage, `0`-`100`. Overrides the process profile's infill density for this job only.
+- `enable_support` -- `1` or `0`. Overrides the process profile's support generation for this job only.
+
+Overrides are applied to an in-memory copy of the process profile and never mutate the stored profile on disk.
 
 ```bash
 curl -X POST http://localhost:5000/api/slice \
@@ -107,6 +122,9 @@ curl -X POST http://localhost:5000/api/slice \
   -F 'filament=my-filament' \
   -F 'bed_type=Textured PEI Plate' \
   -F 'orient=1' \
+  -F 'layer_height=0.28' \
+  -F 'fill_density=25' \
+  -F 'enable_support=1' \
   -o output.gcode
 ```
 
@@ -211,6 +229,45 @@ To view container logs:
 ```bash
 podman logs -f orcaslicer-web
 ```
+
+## Testing
+
+End-to-end tests run against a live container. They upload profiles, slice real STL models, and compare GCODE output against reference files sliced with the OrcaSlicer GUI.
+
+**Prerequisites:** container running on port 5000, [`uv`](https://github.com/astral-sh/uv) installed.
+
+```bash
+# Start the container if not already running
+podman run -d --name orcaslicer-web -p 5000:5000 -v orcaslicer-profiles:/data orcaslicer-web
+
+# Run the full suite
+uv run --with pytest --with requests pytest tests/ -v
+```
+
+To run against a different host:
+
+```bash
+ORCASLICER_API=http://other-host:5000 uv run --with pytest --with requests pytest tests/ -v
+```
+
+### Test files
+
+`tests/fixtures/` is tracked in git and contains everything the test suite needs:
+
+- `fixtures/models/` — STL models (`cube_20mm.stl`, `needs_orient.stl`)
+- `fixtures/reference_gcode/` — reference GCODE sliced with the OrcaSlicer GUI (ground truth), named `<model>_PLA_reference.gcode`
+- `fixtures/profiles/{printer,process,filament}/` — the Sovol SV08 printer/process and Protopasta PLA filament profiles used by every test
+
+The reference GCODE files were sliced in the GUI with **Textured PEI Plate** bed type at 55°C. The `needs_orient` reference used auto-orient enabled. Tests assert that key GCODE header params (layer height, temperatures, nozzle diameter, filament type, profile IDs) match between the API and the GUI reference.
+
+`test_files_for_now/` (git-ignored) holds extra scratch assets not needed by the automated suite -- alternate filament profiles, `.scad` sources, exported preset bundles, and one-off GCODE captured while debugging. Promote a file out of it into `tests/fixtures/` if a test starts depending on it.
+
+### Adding new reference files
+
+1. Create or export your STL and profiles
+2. Slice in the OrcaSlicer GUI with your chosen settings, save the `.gcode`
+3. Place the STL under `tests/fixtures/models/`, the GCODE under `tests/fixtures/reference_gcode/` (as `<prefix>_PLA_<anything>.gcode`), and profiles under `tests/fixtures/profiles/<category>/`
+4. Add a test case in `tests/test_slice.py` following the existing pattern
 
 ## Inspiration
 

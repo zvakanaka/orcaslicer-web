@@ -24,6 +24,14 @@ BUNDLED_PROFILES_DIR = Path(os.environ.get(
     "BUNDLED_PROFILES_DIR",
     "/opt/orcaslicer/resources/profiles",
 ))
+# Starter profiles (Sovol SV08 + Protopasta PLA) shipped with the test suite.
+# Seeded into an empty PROFILES_DIR/<category> on startup so a fresh instance
+# is immediately usable; once a category has any profile (seeded, uploaded, or
+# customized), it's left alone.
+DEFAULT_PROFILES_DIR = Path(os.environ.get(
+    "DEFAULT_PROFILES_DIR",
+    str(Path(__file__).parent / "tests" / "fixtures" / "profiles"),
+))
 SLICE_TIMEOUT = 300  # seconds
 
 VALID_CATEGORIES = {"printer", "process", "filament"}
@@ -51,6 +59,11 @@ current_job = {"busy": False, "model": None, "started": None}
 # Built once at startup, used for resolving "inherits" in user profiles.
 _system_profile_index = {"machine": {}, "process": {}, "filament": {}}
 
+# Names of profiles seeded from DEFAULT_PROFILES_DIR, per category. Used to
+# flag them as defaults in the UI; a name is dropped once the profile is
+# replaced, renamed, or deleted (i.e. no longer "the untouched default").
+_default_profile_names = {"printer": set(), "process": set(), "filament": set()}
+
 
 def build_system_profile_index():
     """Scan bundled OrcaSlicer profiles and index them by name."""
@@ -58,8 +71,16 @@ def build_system_profile_index():
         log.warning("Bundled profiles dir not found: %s", BUNDLED_PROFILES_DIR)
         return
 
+    # Sort so OrcaFilamentLibrary is processed last — its base profiles (e.g.
+    # fdm_filament_pla) are the canonical system definitions and must win over
+    # vendor-specific copies of the same profile name.
+    vendor_dirs = sorted(
+        BUNDLED_PROFILES_DIR.iterdir(),
+        key=lambda p: (p.name == "OrcaFilamentLibrary", p.name),
+    )
+
     count = 0
-    for vendor_dir in BUNDLED_PROFILES_DIR.iterdir():
+    for vendor_dir in vendor_dirs:
         if not vendor_dir.is_dir():
             continue
         for subdir in ("machine", "process", "filament"):
@@ -71,7 +92,7 @@ def build_system_profile_index():
                     with open(json_file) as f:
                         obj = json.load(f)
                     name = obj.get("name")
-                    if name and name not in _system_profile_index[subdir]:
+                    if name:
                         _system_profile_index[subdir][name] = json_file
                         count += 1
                 except Exception:
@@ -187,6 +208,66 @@ def build_gcode_filename(format_template, model_filename, process_data, filament
     return result or f"{model_stem}.gcode"
 
 
+LAYER_HEIGHT_RANGE = (0.04, 0.6)
+
+
+def parse_process_overrides(form):
+    """Parse optional per-slice process overrides from the request form.
+
+    Returns (overrides, errors). Overrides are only applied on top of a
+    temporary copy of the process profile, never written back to disk.
+    """
+    overrides = {}
+    errors = []
+
+    layer_height = form.get("layer_height", "").strip()
+    if layer_height:
+        try:
+            value = float(layer_height)
+        except ValueError:
+            errors.append("layer_height must be a number")
+        else:
+            lo, hi = LAYER_HEIGHT_RANGE
+            if not (lo <= value <= hi):
+                errors.append(f"layer_height must be between {lo} and {hi}")
+            else:
+                overrides["layer_height"] = value
+
+    fill_density = form.get("fill_density", "").strip().rstrip("%")
+    if fill_density:
+        try:
+            value = int(fill_density)
+        except ValueError:
+            errors.append("fill_density must be an integer percentage")
+        else:
+            if not (0 <= value <= 100):
+                errors.append("fill_density must be between 0 and 100")
+            else:
+                overrides["fill_density"] = f"{value}%"
+
+    enable_support = form.get("enable_support", "").strip().lower()
+    if enable_support in ("1", "true", "on", "yes"):
+        overrides["enable_support"] = "1"
+    elif enable_support in ("0", "false", "off", "no"):
+        overrides["enable_support"] = "0"
+
+    return overrides, errors
+
+
+def apply_process_overrides(process_data, overrides):
+    """Apply overrides onto a loaded process profile dict, matching the
+    existing value's shape. OrcaSlicer's config format stores every value as
+    a string (or a list of strings) even for numeric fields, so overrides
+    must be stringified too or the CLI silently ignores them and falls back
+    to the inherited default."""
+    for key, value in overrides.items():
+        if isinstance(process_data.get(key), list):
+            process_data[key] = [str(value)]
+        else:
+            process_data[key] = str(value)
+    return process_data
+
+
 def sanitize_profile_name(name):
     name = name.lower()
     name = re.sub(r"[^a-z0-9-]", "-", name)
@@ -194,6 +275,47 @@ def sanitize_profile_name(name):
     name = name.strip("-")
     name = name[:100]
     return name
+
+
+def seed_default_profiles():
+    """Copy starter profiles into any category that has none yet.
+
+    Mirrors a normal upload (metadata injection, inherits resolution, name
+    sanitizing) so seeded profiles are indistinguishable from user uploads
+    except for the is_default flag. Categories that already have a profile
+    (from a prior seed, a volume-mounted upload, etc.) are left untouched.
+    """
+    if not DEFAULT_PROFILES_DIR.is_dir():
+        log.warning("Default profiles dir not found: %s", DEFAULT_PROFILES_DIR)
+        return
+
+    for category in VALID_CATEGORIES:
+        profile_dir = PROFILES_DIR / category
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        if any(profile_dir.glob("*.json")):
+            continue
+
+        src_dir = DEFAULT_PROFILES_DIR / category
+        if not src_dir.is_dir():
+            continue
+
+        for src_file in sorted(src_dir.glob("*.json")):
+            try:
+                data = ensure_orca_metadata(src_file.read_bytes(), category)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                log.warning("Skipping invalid default profile %s", src_file)
+                continue
+
+            name = sanitize_profile_name(src_file.stem)
+            if not name:
+                continue
+
+            get_profile_path(category, name).write_bytes(data)
+            _default_profile_names[category].add(name)
+
+        if _default_profile_names[category]:
+            log.info("Seeded %d default %s profile(s)",
+                      len(_default_profile_names[category]), category)
 
 
 def validate_category(category):
@@ -214,6 +336,7 @@ def profile_info(category, name):
         "category": category,
         "size": stat.st_size,
         "modified": stat.st_mtime,
+        "is_default": name in _default_profile_names.get(category, set()),
     }
 
 
@@ -282,6 +405,7 @@ def list_profiles(category):
             "name": name,
             "size": stat.st_size,
             "modified": stat.st_mtime,
+            "is_default": name in _default_profile_names.get(category, set()),
         })
 
     return jsonify(category=category, profiles=profiles)
@@ -366,6 +490,7 @@ def replace_profile(category, name):
 
     path = get_profile_path(category, name)
     path.write_bytes(data)
+    _default_profile_names.get(category, set()).discard(name)
     return jsonify(**profile_info(category, name))
 
 
@@ -395,6 +520,7 @@ def rename_profile(category, name):
         return jsonify(error=f"Profile '{new_name}' already exists in {category}"), 409
 
     path.rename(new_path)
+    _default_profile_names.get(category, set()).discard(name)
     return jsonify(**profile_info(category, new_name))
 
 
@@ -409,6 +535,7 @@ def delete_profile(category, name):
         return jsonify(error=f"Profile '{name}' not found in {category}"), 404
 
     path.unlink()
+    _default_profile_names.get(category, set()).discard(name)
     return jsonify(deleted=name, category=category)
 
 
@@ -463,6 +590,10 @@ def slice_model():
     if missing:
         return jsonify(error=f"Profiles not found: {', '.join(missing)}"), 404
 
+    overrides, override_errors = parse_process_overrides(request.form)
+    if override_errors:
+        return jsonify(error="; ".join(override_errors)), 400
+
     # Acquire lock
     if not slice_lock.acquire(blocking=False):
         return jsonify(error="Slicer is busy. Try again later.", busy=True), 409
@@ -484,6 +615,19 @@ def slice_model():
         model_path = job_dir / model_filename
         model_file.save(str(model_path))
 
+        # Load the process profile once; apply any per-slice overrides onto a
+        # temp copy so the stored profile on disk is never mutated.
+        with open(process_path) as f:
+            process_data = json.load(f)
+
+        if overrides:
+            apply_process_overrides(process_data, overrides)
+            effective_process_path = job_dir / "process_override.json"
+            with open(effective_process_path, "w") as f:
+                json.dump(process_data, f)
+        else:
+            effective_process_path = process_path
+
         # Build command
         orient = request.form.get("orient", "").strip().lower() in ("1", "true", "on", "yes")
         bed_type = request.form.get("bed_type", "").strip()
@@ -492,7 +636,7 @@ def slice_model():
         cmd = [
             ORCASLICER_BIN,
             "--slice", "0",
-            "--load-settings", f"{printer_path};{process_path}",
+            "--load-settings", f"{printer_path};{effective_process_path}",
             "--load-filaments", str(filament_path),
             "--allow-newer-file",
             "--arrange", "1",
@@ -528,11 +672,6 @@ def slice_model():
 
         # Build gcode filename from process profile's filename_format template
         model_stem = Path(model_filename).stem
-        try:
-            with open(process_path) as f:
-                process_data = json.load(f)
-        except Exception:
-            process_data = {}
         try:
             with open(filament_path) as f:
                 filament_data = json.load(f)
@@ -627,6 +766,10 @@ def api_help():
             "title": "Slice with bed type and auto-orient",
             "command": f"curl -X POST {base}/api/slice -F 'model=@model.stl' -F 'printer=my-printer' -F 'process=my-process' -F 'filament=my-filament' -F 'bed_type=Textured PEI Plate' -F 'orient=1' -o output.gcode",
         },
+        {
+            "title": "Slice with per-job overrides (layer height, infill, supports)",
+            "command": f"curl -X POST {base}/api/slice -F 'model=@model.stl' -F 'printer=my-printer' -F 'process=my-process' -F 'filament=my-filament' -F 'layer_height=0.28' -F 'fill_density=25' -F 'enable_support=1' -o output.gcode",
+        },
     ])
 
 
@@ -640,5 +783,6 @@ if __name__ == "__main__":
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
     build_system_profile_index()
+    seed_default_profiles()
 
     app.run(host=host, port=port)
