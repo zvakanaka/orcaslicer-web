@@ -1,0 +1,17 @@
+{
+    "brim_type": "brim_ears",
+    "from": "User",
+    "inherits": "0.20mm Standard @Sovol SV08",
+    "name": "0.20mm Standard @Sovol SV08 - Tuned",
+    "print_extruder_id": [
+        "1"
+    ],
+    "print_extruder_variant": [
+        "Direct Drive Standard"
+    ],
+    "print_settings_id": "0.20mm Standard @Sovol SV08 - Tuned",
+    "seam_slope_type": "all",
+    "skirt_loops": "0",
+    "version": "2.3.2.60",
+    "wall_loops": "3"
+}
