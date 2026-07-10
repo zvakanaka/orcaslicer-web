@@ -2,6 +2,10 @@
 FROM debian:trixie-slim AS extract
 
 ARG TARGETARCH=amd64
+# Pinned to v2.4.2 (2026-07-09). To upgrade: download both assets,
+# run `sha256sum` on each, and update these args + the URLs below.
+ARG ORCASLICER_AMD64_SHA256=d12fb8c8eac1aecd2dfb6377acd48f994f8fa439ed5292fa532dd82880f029fd
+ARG ORCASLICER_ARM64_SHA256=22ecccd26c86fde32ffe010741670513bc04273959494c0cea2a297d5265e262
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -17,7 +21,8 @@ WORKDIR /tmp
 # arm64: extract flatpak bundle via ostree (avoids downloading full GNOME runtime)
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
       curl -fSL -o OrcaSlicer.AppImage \
-        "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/nightly-builds/OrcaSlicer_Linux_AppImage_Ubuntu2404_nightly.AppImage" && \
+        "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.4.2.AppImage" && \
+      echo "${ORCASLICER_AMD64_SHA256}  OrcaSlicer.AppImage" | sha256sum --check && \
       chmod +x OrcaSlicer.AppImage && \
       ./OrcaSlicer.AppImage --appimage-extract && \
       mv squashfs-root /opt/orcaslicer && \
@@ -25,7 +30,8 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     elif [ "$TARGETARCH" = "arm64" ]; then \
       apt-get update && apt-get install -y --no-install-recommends flatpak ostree && \
       curl -fSL -o OrcaSlicer.flatpak \
-        "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/nightly-builds/OrcaSlicer-Linux-flatpak_nightly_aarch64.flatpak" && \
+        "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer-Linux-flatpak_V2.4.2_aarch64.flatpak" && \
+      echo "${ORCASLICER_ARM64_SHA256}  OrcaSlicer.flatpak" | sha256sum --check && \
       ostree init --repo=/tmp/repo --mode=bare-user && \
       flatpak build-import-bundle /tmp/repo OrcaSlicer.flatpak && \
       REF=$(ostree refs --repo=/tmp/repo | head -1) && \
@@ -50,7 +56,7 @@ RUN printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie trixi
     apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv \
     xvfb \
-    libgl1 libgl1-mesa-dri libegl1 libopengl0 libcurl4 \
+    libgl1 libgl1-mesa-dri libegl1 libopengl0 libglu1-mesa libcurl4 \
     libgtk-3-0 \
     libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 \
     libwebkit2gtk-4.1-0 \
@@ -69,6 +75,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY app.py /app/app.py
 COPY templates /app/templates
+COPY tests/fixtures/profiles /app/tests/fixtures/profiles
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
