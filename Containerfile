@@ -57,7 +57,7 @@ RUN printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie trixi
     python3 python3-pip python3-venv \
     xvfb \
     libgl1 libgl1-mesa-dri libegl1 libopengl0 libglu1-mesa libcurl4 \
-    libgtk-3-0 \
+    libgtk-3-0 libnotify4 \
     libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 \
     libwebkit2gtk-4.1-0 \
     libglib2.0-0 \
