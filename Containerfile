@@ -2,10 +2,10 @@
 FROM debian:trixie-slim AS extract
 
 ARG TARGETARCH=amd64
-# Pinned to v2.4.2 (2026-07-09). To upgrade: download both assets,
+# Pinned to v2.4.2 (2026-07-12). To upgrade: download both assets,
 # run `sha256sum` on each, and update these args + the URLs below.
 ARG ORCASLICER_AMD64_SHA256=d12fb8c8eac1aecd2dfb6377acd48f994f8fa439ed5292fa532dd82880f029fd
-ARG ORCASLICER_ARM64_SHA256=22ecccd26c86fde32ffe010741670513bc04273959494c0cea2a297d5265e262
+ARG ORCASLICER_ARM64_SHA256=e1a07275a25f176626c55a5df39e91bc4476d8c28ee4a3192ff758e29dd5c3ba
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -17,8 +17,17 @@ RUN printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie trixi
 
 WORKDIR /tmp
 
-# amd64: extract AppImage
-# arm64: extract flatpak bundle via ostree (avoids downloading full GNOME runtime)
+# amd64: extract AppImage via its self-extractor (native arch, runs fine).
+# arm64: extract the AppImage's embedded squashfs directly with unsquashfs
+# instead of self-extracting. The arm64 AppImage is a static-pie ELF, which
+# QEMU user-mode emulation (used to build this image on non-arm64 hosts)
+# cannot execute, so `--appimage-extract` fails there with "Exec format
+# error". unsquashfs only needs to read the file, not run it.
+# (We previously used the arm64 flatpak build, but it's linked against
+# GNOME Platform 50's glibc 2.42, newer than trixie's 2.41, causing
+# `GLIBC_2.42' not found` at runtime. The AppImage build links against
+# normal system libs, like the amd64 build, and bundles its own
+# lib/orca-runtime for the rest.)
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
       curl -fSL -o OrcaSlicer.AppImage \
         "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.4.2.AppImage" && \
@@ -28,22 +37,14 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
       mv squashfs-root /opt/orcaslicer && \
       rm OrcaSlicer.AppImage; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
-      apt-get update && apt-get install -y --no-install-recommends flatpak ostree && \
-      curl -fSL -o OrcaSlicer.flatpak \
-        "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer-Linux-flatpak_V2.4.2_aarch64.flatpak" && \
-      echo "${ORCASLICER_ARM64_SHA256}  OrcaSlicer.flatpak" | sha256sum --check && \
-      ostree init --repo=/tmp/repo --mode=bare-user && \
-      flatpak build-import-bundle /tmp/repo OrcaSlicer.flatpak && \
-      REF=$(ostree refs --repo=/tmp/repo | head -1) && \
-      ostree checkout --repo=/tmp/repo "$REF" /tmp/orcaslicer-raw && \
-      mkdir -p /opt/orcaslicer/resources && \
-      cp -a /tmp/orcaslicer-raw/files/* /opt/orcaslicer/ && \
-      ln -s ../share/OrcaSlicer/profiles /opt/orcaslicer/resources/profiles && \
-      printf '#!/bin/sh\nDIR=$(dirname "$(readlink -f "$0")")\nexport LD_LIBRARY_PATH="$DIR/lib:$DIR/lib64:$LD_LIBRARY_PATH"\nexec "$DIR/bin/orca-slicer" "$@"\n' \
-        > /opt/orcaslicer/AppRun && \
-      chmod +x /opt/orcaslicer/AppRun && \
-      rm -rf /tmp/repo /tmp/orcaslicer-raw OrcaSlicer.flatpak && \
-      apt-get purge -y flatpak ostree && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*; \
+      apt-get update && apt-get install -y --no-install-recommends squashfs-tools && \
+      curl -fSL -o OrcaSlicer.AppImage \
+        "https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Linux_AppImage_Ubuntu2404_aarch64_V2.4.2.AppImage" && \
+      echo "${ORCASLICER_ARM64_SHA256}  OrcaSlicer.AppImage" | sha256sum --check && \
+      OFFSET=$(grep -a -b -o -m1 -P '\x68\x73\x71\x73' OrcaSlicer.AppImage | head -1 | cut -d: -f1) && \
+      unsquashfs -o "$OFFSET" -d /opt/orcaslicer OrcaSlicer.AppImage && \
+      rm OrcaSlicer.AppImage && \
+      apt-get purge -y squashfs-tools && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*; \
     fi
 
 # Stage 2: Runtime
