@@ -1,9 +1,13 @@
+import base64
 import os
 import re
 import uuid
 import pytest
 import requests
+from io import BytesIO
 from pathlib import Path
+
+from PIL import Image
 
 API_BASE = os.environ.get("ORCASLICER_API", "http://localhost:5000")
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -58,6 +62,35 @@ def parse_gcode_header(content: bytes) -> dict:
         if m:
             params[m.group(1).strip()] = m.group(2).strip()
     return params
+
+
+_THUMBNAIL_RE = re.compile(
+    r"; thumbnail begin (\d+)x(\d+) (\d+)\n"
+    r"((?:; [^\n]*\n)*)"
+    r"; thumbnail end",
+)
+
+
+def parse_gcode_thumbnails(content: bytes) -> dict:
+    """Extract every embedded thumbnail from GCODE as {(width, height): PIL.Image}.
+
+    Parses the "; thumbnail begin WxH SIZE" / base64-in-comments / "; thumbnail end"
+    blocks directly from the raw text -- independent of the app's own injection code,
+    so a test using this actually verifies the on-disk GCODE format, not just that the
+    app's regex matches what it itself wrote.
+    """
+    text = content.decode("utf-8", errors="replace")
+    thumbnails = {}
+    for match in _THUMBNAIL_RE.finditer(text):
+        width, height, declared_size = int(match.group(1)), int(match.group(2)), int(match.group(3))
+        b64 = "".join(line[2:] for line in match.group(4).splitlines())
+        assert len(b64) == declared_size, (
+            f"{width}x{height} thumbnail: declared size {declared_size} != actual base64 length {len(b64)}"
+        )
+        image = Image.open(BytesIO(base64.b64decode(b64)))
+        image.load()
+        thumbnails[(width, height)] = image
+    return thumbnails
 
 
 def unique_name() -> str:
