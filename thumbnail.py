@@ -1,4 +1,4 @@
-"""Replaces OrcaSlicer's rendered-preview thumbnails in GCODE with X-ray toolpath renders.
+"""Replaces all of OrcaSlicer's rendered-preview thumbnails in GCODE with X-ray toolpath renders.
 
 Uses gcode-xray-thumbnail (https://github.com/zvakanaka/gcode-xray-thumbnail) to render
 an isometric image from the sliced GCODE's own extrusion moves, then splices it into the
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 # OrcaSlicer wraps each thumbnail's base64 payload at 78 chars per comment line.
 THUMBNAIL_LINE_WIDTH = 78
 
-XRAY_SIZES = [(400, 300), (32, 32)]
+XRAY_SIZES = [(300, 300), (400, 300), (32, 32)]
 
 
 def _thumbnail_block(width, height, image):
