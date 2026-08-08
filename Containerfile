@@ -72,9 +72,12 @@ RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends git && \
+    pip install --no-cache-dir -r /app/requirements.txt && \
+    apt-get purge -y git && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 COPY app.py /app/app.py
+COPY thumbnail.py /app/thumbnail.py
 COPY templates /app/templates
 COPY tests/fixtures/profiles /app/tests/fixtures/profiles
 COPY entrypoint.sh /app/entrypoint.sh
