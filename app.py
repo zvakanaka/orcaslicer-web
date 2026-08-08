@@ -12,6 +12,8 @@ from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request, send_file
 
+from thumbnail import inject_xray_thumbnails
+
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB
 
@@ -677,7 +679,12 @@ def slice_model():
             ), 500
 
         gcode_path = gcode_files[0]
-        gcode_data = BytesIO(gcode_path.read_bytes())
+        gcode_text = gcode_path.read_text()
+        try:
+            gcode_text = inject_xray_thumbnails(gcode_text)
+        except Exception:
+            log.exception("Failed to render X-ray thumbnails; keeping original GCODE thumbnails")
+        gcode_data = BytesIO(gcode_text.encode())
 
         # Build gcode filename from process profile's filename_format template
         model_stem = Path(model_filename).stem
