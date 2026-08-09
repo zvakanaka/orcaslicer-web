@@ -27,6 +27,19 @@ THUMBNAIL_LINE_WIDTH = 78
 
 XRAY_SIZES = [(300, 300), (400, 300), (32, 32)]
 
+# gcode_xray_thumbnail.render()'s default 10px margin is negligible at
+# 300x300/400x300 but eats a third of a 32x32 icon on each axis (32 - 2*10
+# = 12px left for content), so the tiny toolbar-sized thumbnail renders as a
+# barely-visible speck. Zero it out only for that size.
+_MARGIN_OVERRIDES = {(32, 32): 0}
+
+
+def _render(gcode_text, width, height):
+    kwargs = {}
+    if (width, height) in _MARGIN_OVERRIDES:
+        kwargs["margin"] = _MARGIN_OVERRIDES[(width, height)]
+    return render(gcode_text, size=(width, height), **kwargs)
+
 
 def _thumbnail_block(width, height, image):
     buf = BytesIO()
@@ -68,12 +81,12 @@ def inject_xray_thumbnails(gcode_text, sizes=XRAY_SIZES):
         if not pattern.search(gcode_text):
             missing.append((width, height))
             continue
-        image = render(original, size=(width, height))
+        image = _render(original, width, height)
         gcode_text = pattern.sub(_thumbnail_block(width, height, image), gcode_text, count=1)
 
     if missing:
         new_blocks = "".join(
-            _thumbnail_block(width, height, render(original, size=(width, height))) + "\n"
+            _thumbnail_block(width, height, _render(original, width, height)) + "\n"
             for width, height in missing
         )
         if _HEADER_END_RE.search(gcode_text):
